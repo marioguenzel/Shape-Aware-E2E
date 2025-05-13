@@ -161,7 +161,7 @@ def ensure_filepath_exists(filepath: str):
         os.makedirs(directory)
 
 
-def save_chain_as_json(chain: CEChain, filepath: str, name: str):
+def save_chain_as_json(chain: CEChain, filepath: str):
     """Save CEChain object as JSON. Just stores the chain without the computed features."""
     chain_data = {
         "ID": chain.id,
@@ -171,18 +171,12 @@ def save_chain_as_json(chain: CEChain, filepath: str, name: str):
         ]
     }
 
-    # Merge name with filepath
-    filepath = os.path.join(os.path.dirname(filepath), f"{name}_{os.path.basename(filepath)}")
-
     with open(filepath, "w") as f:
         json.dump(chain_data, f, indent=4)
 
 
-def save_chains_as_jsonl(chains: list[CEChain], filepath: str, name: str):
+def save_chains_as_jsonl(chains: list[CEChain], filepath: str):
     """Save a list of CEChain objects as JSONL, one chain per line."""
-
-    # Merge name with filepath
-    filepath = os.path.join(os.path.dirname(filepath), f"{name}_{os.path.basename(filepath)}")
 
     with open(filepath, "w") as f:
         for chain in chains:
@@ -196,6 +190,24 @@ def save_chains_as_jsonl(chains: list[CEChain], filepath: str, name: str):
             f.write(json.dumps(chain_data) + "\n")
 
 
+def load_chain_from_json(filepath: str) -> CEChain:
+    """Load a CEChain object from a JSON file."""
+    with open(filepath, "r") as f:
+        chain_data = json.load(f)
+    
+    tasks = [Task(t["phase"], t["period"], t["deadline"]) for t in chain_data["tasks"]]
+    return CEChain(*tasks, id=chain_data["ID"])
+
+
+def load_chains_from_jsonl(filepath: str) -> list[CEChain]:
+    """Load a list of CEChain objects from a JSONL file."""
+    chains = []
+    with open(filepath, "r") as f:
+        for line in f:
+            chain_data = json.loads(line.strip())
+            tasks = [Task(t["phase"], t["period"], t["deadline"]) for t in chain_data["tasks"]]
+            chains.append(CEChain(*tasks, id=chain_data["ID"]))
+    return chains
 
 # Example usage:
 # save_chain_as_json(chain, "/path/to/output.json")
