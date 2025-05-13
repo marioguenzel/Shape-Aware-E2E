@@ -1,5 +1,8 @@
 
 import math
+import json
+import random
+import os
 
 
 class Task:
@@ -27,8 +30,9 @@ class Task:
 
 class CEChain:
     """A Cause-Effect Chain."""
-    def __init__(self, *tasks: Task):
+    def __init__(self, *tasks: Task, id: int = None):
         self.tasks = tasks
+        self.id = id if id is not None else random.randint(1000, 9999)
 
         self.hyperperiod = None
         self.warmup = None
@@ -129,7 +133,7 @@ class CEChain:
 def analyze(chain: CEChain):
     results = dict()
     if chain.anchorsRT is None or chain.anchorsDA is None:
-        chain.calc_anchors
+        chain.calc_anchors()
     
     # Max RT and Max DA
     results['MaxRT'] = max([y for x,y in chain.anchorsRT])
@@ -145,10 +149,56 @@ def analyze(chain: CEChain):
 
     return results
 
-def time_disparity(chain1: CEChain, chain2: CEChain):
-    # Calculate the Time Disparity
-    # Since we probably get the full shape, we could do again min, max, average longest consecutive exceedance?
-    return None
+
+
+
+# === DATA HANDLING ===
+
+def ensure_filepath_exists(filepath: str):
+    """Check if a filepath exists and create it if it doesn't."""
+    directory = os.path.dirname(filepath)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
+
+
+def save_chain_as_json(chain: CEChain, filepath: str, name: str):
+    """Save CEChain object as JSON. Just stores the chain without the computed features."""
+    chain_data = {
+        "ID": chain.id,
+        "tasks": [
+            {"phase": t.phase, "period": t.period, "deadline": t.deadline}
+            for t in chain.tasks
+        ]
+    }
+
+    # Merge name with filepath
+    filepath = os.path.join(os.path.dirname(filepath), f"{name}_{os.path.basename(filepath)}")
+
+    with open(filepath, "w") as f:
+        json.dump(chain_data, f, indent=4)
+
+
+def save_chains_as_jsonl(chains: list[CEChain], filepath: str, name: str):
+    """Save a list of CEChain objects as JSONL, one chain per line."""
+
+    # Merge name with filepath
+    filepath = os.path.join(os.path.dirname(filepath), f"{name}_{os.path.basename(filepath)}")
+
+    with open(filepath, "w") as f:
+        for chain in chains:
+            chain_data = {
+                "ID": chain.id,
+                "tasks": [
+                    {"phase": t.phase, "period": t.period, "deadline": t.deadline}
+                    for t in chain.tasks
+                ]
+            }
+            f.write(json.dumps(chain_data) + "\n")
+
+
+
+# Example usage:
+# save_chain_as_json(chain, "/path/to/output.json")
 
 
 if __name__ == '__main__':
