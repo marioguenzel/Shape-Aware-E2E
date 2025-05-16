@@ -139,6 +139,8 @@ def analyze(chain: CEChain):
     results['MaxRT'] = max([y for x,y in chain.anchorsRT])
     results['MaxDA'] = max([y for x,y in chain.anchorsDA])
 
+    assert results['MaxRT'] == results['MaxDA']
+
     # Min RT and Min DA
     
     # Average
@@ -214,16 +216,23 @@ def load_chains_from_jsonl(filepath: str) -> list[CEChain]:
 
 
 if __name__ == '__main__':
-    # DEBUG
-    tau1 = Task(0,50,50)
-    tau2 = Task(0,120,120)
-    chain = CEChain(tau1, tau2)
-    chain.calc_anchors()
+    # DEBUG 1
+    # tau1 = Task(0,50,50)
+    # tau2 = Task(0,120,120)
+    # chain = CEChain(tau1, tau2)
+    # chain.calc_anchors()
 
-    print(chain.anchorsRT)
-    print(chain.anchorsDA)
-    print(chain.hyperperiod)
-    print(chain.starttimes)
-    print(chain._check_RT_anchor_artificial())
+    # print(chain.anchorsRT)
+    # print(chain.anchorsDA)
+    # print(chain.hyperperiod)
+    # print(chain.starttimes)
+    # print(chain._check_RT_anchor_artificial())
 
-    breakpoint()
+    # DEBUG 2
+    chains = load_chains_from_jsonl("test/test.jsonl")
+    for ch in chains:
+        print(analyze(ch))
+
+    
+
+    # breakpoint()
