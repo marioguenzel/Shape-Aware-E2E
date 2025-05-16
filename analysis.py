@@ -231,8 +231,6 @@ if __name__ == '__main__':
     # DEBUG 2
     chains = load_chains_from_jsonl("test/test.jsonl")
     for ch in chains:
-        print(analyze(ch))
-
-    
+        print("ID:", ch.id, analyze(ch))
 
     # breakpoint()
