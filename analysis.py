@@ -138,11 +138,12 @@ def analyze(chain: CEChain):
     # Max RT and Max DA
     results['MaxRT'] = max([y for x,y in chain.anchorsRT])
     results['MaxDA'] = max([y for x,y in chain.anchorsDA])
-
     assert results['MaxRT'] == results['MaxDA']
 
     # Min RT and Min DA
-    
+    results['MinRT'] = minimumRT(chain.anchorsRT)
+    results['MinDA'] = minimumDA(chain.anchorsDA)
+
     # Average
 
     # Longest Consecutive Exceedance
@@ -151,8 +152,33 @@ def analyze(chain: CEChain):
 
     return results
 
+def minimumRT(anchorsRT):
+    minRT = None
+    for i in range(len(anchorsRT) - 1):
+        currentX, currentY = anchorsRT[i]
+        nextX, nextY = anchorsRT[i+1]
 
+        rt = currentY - (nextX - currentX)
 
+        if minRT == None:
+            minRT = rt
+        else:
+            minRT = min(minRT, rt)
+    return minRT
+
+def minimumDA(anchorsDA):
+    minDA = None
+    for i in range(len(anchorsDA) - 1):
+        prevX, prevY = anchorsDA[i]
+        currentX, currentY = anchorsDA[i+1]
+
+        da = currentY - (currentX - prevX)
+
+        if minDA == None:
+            minDA = da
+        else:
+            minDA = min(minDA, da)
+    return minDA
 
 # === DATA HANDLING ===
 
@@ -229,8 +255,23 @@ if __name__ == '__main__':
     # print(chain._check_RT_anchor_artificial())
 
     # DEBUG 2
-    chains = load_chains_from_jsonl("test/test.jsonl")
-    for ch in chains:
-        print("ID:", ch.id, analyze(ch))
+    #chains = load_chains_from_jsonl("test/test.jsonl")
+    #for ch in chains:
+    #    print("ID:", ch.id, analyze(ch))
+
+    # DEBUG 3
+    # Example chain from paper
+    tau1 = Task(0,6,6)
+    tau2 = Task(0,10,10)
+    tau3 = Task(0,5,5)
+    chain = CEChain(tau1, tau2, tau3)
+    chain.calc_anchors()
+
+    print(chain.anchorsRT)
+    print(chain.anchorsDA)
+    print(chain.hyperperiod)
+    print(chain.starttimes)
+    print(chain._check_RT_anchor_artificial())
+    print(analyze(chain))
 
     # breakpoint()
