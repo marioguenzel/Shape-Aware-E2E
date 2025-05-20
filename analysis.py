@@ -174,6 +174,7 @@ class CEChain:
 
     def get_anchorsRT(self,fromtime, totime, leftborder=True,rightborder=True, artificialborder=False):
         # artificialborders adds an anchor on the LEFT border such that the RT is fully defined inside the interval [fromtime, totime]
+        # leftborder and rightborder describe whether potential anchor points that lie right on the border of the interval should be included or not.
         anchorsRT = list()
 
         if self.anchorsRT == None:
@@ -239,8 +240,11 @@ def analyze(chain: CEChain):
         chain.calc_anchors()
     
     # Anchors for RT and DA over one hyperperiod starting after the warmup phase
-    anchorsRT = chain.get_anchorsRT(chain.tasks[0].re(chain.warmup[0]), chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod)
-    anchorsDA = chain.get_anchorsRT(chain.tasks[-1].re(chain.warmup[-1]), chain.tasks[-1].re(chain.warmup[-1]) + chain.hyperperiod)
+    anchorsRT = chain.get_anchorsRT(chain.tasks[0].re(chain.warmup[0]), chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod, rightborder=False)
+    anchorsDA = chain.get_anchorsDA(chain.tasks[-1].we(chain.warmup[-1]), chain.tasks[-1].we(chain.warmup[-1]) + chain.hyperperiod, leftborder=True)
+    
+    print("Anchors RT: ", anchorsRT)
+    print("Anchors DA: ", anchorsDA)
 
     # Max RT and Max DA
     results['MaxRT'] = max([y for x,y in anchorsRT])
@@ -252,10 +256,15 @@ def analyze(chain: CEChain):
     results['MinDA'] = minimumDA(anchorsDA)
 
     # Average
+    results['AvRT'] = averageRT(chain, anchorsRT)
+    results['AvDA'] = averageDA(chain, anchorsDA)
+
+    # Throughput
+    results['throughp'] = chain.hyperperiod / len(chain.get_anchorsDA(chain.tasks[-1].we(chain.warmup[-1]), chain.tasks[-1].we(chain.warmup[-1]) + chain.hyperperiod, leftborder=False))
 
     # Longest Consecutive Exceedance
 
-    # Throughput
+    
 
     return results
 
@@ -286,6 +295,40 @@ def minimumDA(anchorsDA):
         else:
             minDA = min(minDA, da)
     return minDA
+
+def averageRT(chain, anchorsRT):
+    
+    avRT = 0
+
+    for i in range(len(anchorsRT)):
+        curr = anchorsRT[i]
+        if (len(anchorsRT)-1 == i):
+            next = (chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod, None)    # y-value not used
+        else:
+            next = anchorsRT[i+1]
+
+        yBar = curr[1] - (next[0] - curr[0])
+
+        avRT = avRT + ((next[0] - curr[0]) * (curr[1] + yBar))
+
+    return avRT / (2 * chain.hyperperiod)
+
+def averageDA(chain, anchorsDA):
+    
+    avDA = 0
+
+    for i in range(len(anchorsDA)):
+        curr = anchorsDA[i]
+        if i == 0:
+            prev = (chain.tasks[-1].we(chain.warmup[-1]), None) # y-value not used
+        else:
+            prev = anchorsDA[i-1]
+
+        yBar = curr[1] - (curr[0] - prev[0])
+
+        avDA = avDA + ((curr[0] - prev[0]) * (curr[1] + yBar))
+
+    return avDA / (2 * chain.hyperperiod)
 
 # === DATA HANDLING ===
 
@@ -381,6 +424,6 @@ if __name__ == '__main__':
     print(chain._check_RT_anchor_artificial())
     print(analyze(chain))
 
-    print(chain.get_anchorsDA(0, chain.hyperperiod * 3))
-    print(chain.get_anchorsRT(10, chain.hyperperiod * 3))
+    #print(chain.get_anchorsDA(0, chain.hyperperiod * 3))
+    #print(chain.get_anchorsRT(10, chain.hyperperiod * 3))
     # breakpoint()
