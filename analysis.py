@@ -104,7 +104,17 @@ class CEChain:
             anchorsDA.append((partend, partend-partstart))
             anchorsRT.append((partstart, partend-partstart))
         
-        # TODO: Remove redundant anchors!
+        # Remove redundant anchors!
+        for i in range(len(anchorsDA) - 1, -1, -1):  # iterating the list backwards while removing redundant anchors
+            currentDA = anchorsDA[i]
+            prevDA = anchorsDA[i-1]
+            if (currentDA[1] - prevDA[1]) == (currentDA[0] - prevDA[0]):    # Check if DA anchor is redundant
+                anchorsDA.pop(i-1)
+
+            currentRT = anchorsRT[i]
+            prevRT = anchorsRT[i-1]
+            if (prevRT[1] - currentRT[1]) == (currentRT[0] - prevRT[0]):    # Check if RT anchor is redundant
+                anchorsRT.pop(i)
 
         # Store anchors
         self.anchorsRT = anchorsRT  # Careful: The anchor on the starttime might be artificial, i.e., not needed when describing later hyperperiods.
@@ -114,13 +124,106 @@ class CEChain:
         """Return all anchors within a given interval."""
         # artificialborders adds an anchor on the RIGHT border such that the DA is fully defined inside the interval [fromtime, totime]
         # leftborder and rightborder describe whether potential anchor points that lie right on the border of the interval should be included or not.
-        # TODO
-        pass
-    
+        anchorsDA = list()
+
+        if self.anchorsDA == None:
+            self.calc_anchors()
+
+        relStart = fromtime % self.hyperperiod
+        hpOffset = fromtime // self.hyperperiod
+        index = 0
+
+        for anchor in self.anchorsDA:   # Find the start anchor
+            if leftborder:
+                if anchor[0] >= relStart:
+                    index = self.anchorsDA.index(anchor)
+                    break
+            else:
+                if anchor[0] > relStart:
+                    index = self.anchorsDA.index(anchor)
+                    break
+        
+        anchorsDA.append((self.anchorsDA[index][0] + (hpOffset * self.hyperperiod), self.anchorsDA[index][1]))
+
+        while anchorsDA[-1][0] < totime:    # Add anchors while the last anchor in the list is inside the interval
+
+            index = index + 1
+
+            if index >= len(self.anchorsDA):
+                index = 1
+                hpOffset = hpOffset + 1
+
+            nextAnchor = (self.anchorsDA[index][0] + self.hyperperiod * hpOffset, self.anchorsDA[index][1])
+
+            anchorsDA.append(nextAnchor)
+
+        if anchorsDA[-1][0] > totime:
+            nextAnchor = anchorsDA.pop(-1)   # the last added anchor is likely outside the interval
+            
+            if artificialborder:
+                diff = nextAnchor[0] - totime
+                artificialAnchor = (nextAnchor[0] - diff, nextAnchor[1] - diff)
+                anchorsDA.append(artificialAnchor)
+
+        if not rightborder:     
+            if anchorsDA[-1][0] == totime:
+                anchorsDA.pop(-1)   # if rightboarder is not included remove an anchor if it lies on the right boarder
+
+        
+        return anchorsDA
+
     def get_anchorsRT(self,fromtime, totime, leftborder=True,rightborder=True, artificialborder=False):
         # artificialborders adds an anchor on the LEFT border such that the RT is fully defined inside the interval [fromtime, totime]
-        # TODO
-        pass
+        anchorsRT = list()
+
+        if self.anchorsRT == None:
+            self.calc_anchors()
+
+        relStart = fromtime % self.hyperperiod
+        hpOffset = fromtime // self.hyperperiod
+        index = 0
+
+        for anchor in self.anchorsRT:   # Find the start anchor
+            if leftborder:
+                if anchor[0] >= relStart:
+                    index = self.anchorsRT.index(anchor)
+                    break
+            else:
+                if anchor[0] > relStart:
+                    index = self.anchorsRT.index(anchor)
+                    break
+        
+        fristRealAnchor = (self.anchorsRT[index][0] + (hpOffset * self.hyperperiod), self.anchorsRT[index][1])
+        
+        if artificialborder:
+            if fristRealAnchor[0] > fromtime:
+                diff = fristRealAnchor[0] - fromtime
+                artificialAnchor = (fristRealAnchor[0] - diff, fristRealAnchor[1] + diff)
+                anchorsRT.append(artificialAnchor)
+
+        anchorsRT.append(fristRealAnchor)
+
+        while anchorsRT[-1][0] < totime:    # Add anchors while the last anchor in the list is inside the interval
+
+            index = index + 1
+
+            if index >= len(self.anchorsRT):
+                index = 1
+                hpOffset = hpOffset + 1
+
+            nextAnchor = (self.anchorsRT[index][0] + self.hyperperiod * hpOffset, self.anchorsRT[index][1])
+
+            anchorsRT.append(nextAnchor)
+
+        if anchorsRT[-1][0] > totime:
+            nextAnchor = anchorsRT.pop(-1)   # the last added anchor is likely outside the interval
+
+        if not rightborder:     
+            if anchorsRT[-1][0] == totime:
+                anchorsRT.pop(-1)   # if rightboarder is not included remove an anchor if it lies on the right boarder
+
+        
+        return anchorsRT
 
     def _check_RT_anchor_artificial(self):
         # The anchor at starttime is artitifical iff there is no anchor on starttime+hyperperiod
@@ -135,14 +238,18 @@ def analyze(chain: CEChain):
     if chain.anchorsRT is None or chain.anchorsDA is None:
         chain.calc_anchors()
     
+    # Anchors for RT and DA over one hyperperiod starting after the warmup phase
+    anchorsRT = chain.get_anchorsRT(chain.tasks[0].re(chain.warmup[0]), chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod)
+    anchorsDA = chain.get_anchorsRT(chain.tasks[-1].re(chain.warmup[-1]), chain.tasks[-1].re(chain.warmup[-1]) + chain.hyperperiod)
+
     # Max RT and Max DA
-    results['MaxRT'] = max([y for x,y in chain.anchorsRT])
-    results['MaxDA'] = max([y for x,y in chain.anchorsDA])
+    results['MaxRT'] = max([y for x,y in anchorsRT])
+    results['MaxDA'] = max([y for x,y in anchorsDA])
     assert results['MaxRT'] == results['MaxDA']
 
     # Min RT and Min DA
-    results['MinRT'] = minimumRT(chain.anchorsRT)
-    results['MinDA'] = minimumDA(chain.anchorsDA)
+    results['MinRT'] = minimumRT(anchorsRT)
+    results['MinDA'] = minimumDA(anchorsDA)
 
     # Average
 
@@ -274,4 +381,6 @@ if __name__ == '__main__':
     print(chain._check_RT_anchor_artificial())
     print(analyze(chain))
 
+    print(chain.get_anchorsDA(0, chain.hyperperiod * 3))
+    print(chain.get_anchorsRT(10, chain.hyperperiod * 3))
     # breakpoint()
