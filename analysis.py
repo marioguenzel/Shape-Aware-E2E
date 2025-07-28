@@ -108,8 +108,18 @@ class CEChain:
             part = self._part(p, jobidx)
             partstart = self.tasks[0].re(part[0][0])
             partend = self.tasks[-1].we(part[-1][-1])
-            anchorsDA.append((partend, partend-partstart))
-            anchorsRT.append((partstart, partend-partstart))
+
+            # If there is already such a point, keep the highest one
+            if len(anchorsDA) != 0 and anchorsDA[-1][0] == partend:
+                anchorsDA[-1] = (partend, max(anchorsDA[-1][1], partend-partstart))
+            else:  # Otherwise, we append
+                anchorsDA.append((partend, partend-partstart))
+
+            # Same for RT
+            if len(anchorsRT) != 0 and anchorsRT[-1][0] == partstart:
+                anchorsRT[-1] = (partstart,max(anchorsRT[-1][1], partend-partstart))
+            else:
+                anchorsRT.append((partstart, partend-partstart))
         
         def repeatentry(entry):
             return (entry[0] + self.hyperperiod, entry[1])
@@ -367,6 +377,19 @@ def throughput(chain: CEChain):
     # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
     return (len(chain.anchorsDA) -1) / chain.hyperperiod
 
+def longestExceedanceRT(chain: CEChain, bound):
+    """Longest Consecutive Exceedance for Reaction Time (LE_{RT}) for a given bound."""
+    
+    # To be done
+    # Make sure to return infty if length is full interval    
+    return None
+
+def longestExceedanceDA(chain: CEChain, bound):
+    """Longest Consecutive Exceedance for Data Age (LE_{DA}) for a given bound."""
+    
+    # To be done
+    # Make sure to return infty if length is full interval    
+    return None
 
 
 ##########
@@ -386,13 +409,23 @@ if __name__ == '__main__':
     # print(chain.hyperperiod)
     # print(chain.starttimes)
 
-    # DEBUG 2
-    chains = load_chains_from_jsonl("test/test.jsonl")
-    for ch in chains:
-        res = analyze(ch)
-        print("ID:", ch.id, res)
-        if res['AvRT'] != res['AvDA']:
-            breakpoint()
+    # # DEBUG 2
+    # chains = load_chains_from_jsonl("test/test.jsonl")
+    # for ch in chains:
+    #     res = analyze(ch)
+    #     print("ID:", ch.id, res)
+    #     if res['AvRT'] != res['AvDA']:
+    #         breakpoint()
+        
+    #     if res['#AnchorsRT'] != res['#AnchorsDA']:
+    #         breakpoint()
+
+    
+    ch = [c for c in load_chains_from_jsonl("test/test.jsonl") if c.id == 992][0]
+    res = analyze(ch)
+    print(ch.anchorsRT)
+    print(ch.anchorsDA)
+    print("ID:", ch.id, res)
 
     # # DEBUG 3
     # # Example chain from paper

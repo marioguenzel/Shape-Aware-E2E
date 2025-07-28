@@ -3,12 +3,7 @@ from analysis import save_chains_as_jsonl, CEChain, Task
 import random
 
 def gen_periods_WATERS(number: int):
-    """Generate a task periods with the WATERS distribution.
-    Output: taskset
-
-    Variables:
-    number: 
-    """
+    """Generate a task periods with the WATERS distribution."""
 
     periods = [1, 2, 5, 10, 20, 50, 100, 200, 1000]
     period_pdf=[0.03 / 0.85, 0.02 / 0.85, 0.02 / 0.85, 0.25 / 0.85, 0.25 / 0.85, 0.03 / 0.85, 0.2 / 0.85, 0.01 / 0.85, 0.04 / 0.85]
@@ -38,9 +33,11 @@ def gen_periods_uniform(number: int, periods: list):
     return random.choices(periods, k=number)
 
 def generateUniform(number_tasks, number_chains, filename):
-    """Generate cause-effect chains with uniform periods, random phase and implicit deadlines."""
+    """Generate cause-effect chains with uniform periods, random phase and implicit deadlines.
+    Current period range: 10, 20, 30, ..., 200
+    """
     chains = []
-    periods_list = list(range(10, 401, 10))
+    periods_list = list(range(10, 201, 10))
     for idx in range(number_chains):
         periods = gen_periods_uniform(number_tasks, periods_list)
         chains.append(CEChain(*[Task(random.randint(0,per), per, per) for per in periods], id=idx))
@@ -49,5 +46,5 @@ def generateUniform(number_tasks, number_chains, filename):
 
 if __name__ == "__main__":
     # Generate 10 test CE chains with 5 tasks each using WATERS periods
-    generateSynchronousImplicitWATERS(10,10000,"test/test.jsonl") 
-    # generateUniform(5,10000,"test/test.jsonl") 
+    # generateSynchronousImplicitWATERS(10,1000,"test/test.jsonl") 
+    generateUniform(5,1000,"test/test.jsonl") 
