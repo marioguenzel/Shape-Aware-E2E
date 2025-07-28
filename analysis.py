@@ -5,6 +5,7 @@ import random
 import os
 import itertools
 import time
+import argparse
 
 
 ##########
@@ -397,47 +398,101 @@ def longestExceedanceDA(chain: CEChain, bound):
 ##########
 
 
-if __name__ == '__main__':
-    # DEBUG 1
-    # tau1 = Task(0,50,50)
-    # tau2 = Task(0,120,120)
-    # chain = CEChain(tau1, tau2)
-    # chain.calc_anchors()
+# if __name__ == '__main__':
+#     # DEBUG 1
+#     # tau1 = Task(0,50,50)
+#     # tau2 = Task(0,120,120)
+#     # chain = CEChain(tau1, tau2)
+#     # chain.calc_anchors()
 
-    # print(chain.anchorsRT)
-    # print(chain.anchorsDA)
-    # print(chain.hyperperiod)
-    # print(chain.starttimes)
+#     # print(chain.anchorsRT)
+#     # print(chain.anchorsDA)
+#     # print(chain.hyperperiod)
+#     # print(chain.starttimes)
 
-    # # DEBUG 2
-    # chains = load_chains_from_jsonl("test/test.jsonl")
-    # for ch in chains:
-    #     res = analyze(ch)
-    #     print("ID:", ch.id, res)
-    #     if res['AvRT'] != res['AvDA']:
-    #         breakpoint()
+#     # # DEBUG 2
+#     # chains = load_chains_from_jsonl("test/test.jsonl")
+#     # for ch in chains:
+#     #     res = analyze(ch)
+#     #     print("ID:", ch.id, res)
+#     #     if res['AvRT'] != res['AvDA']:
+#     #         breakpoint()
         
-    #     if res['#AnchorsRT'] != res['#AnchorsDA']:
-    #         breakpoint()
+#     #     if res['#AnchorsRT'] != res['#AnchorsDA']:
+#     #         breakpoint()
 
     
-    ch = [c for c in load_chains_from_jsonl("test/test.jsonl") if c.id == 992][0]
-    res = analyze(ch)
-    print(ch.anchorsRT)
-    print(ch.anchorsDA)
-    print("ID:", ch.id, res)
+#     ch = [c for c in load_chains_from_jsonl("test/test.jsonl") if c.id == 992][0]
+#     res = analyze(ch)
+#     print(ch.anchorsRT)
+#     print(ch.anchorsDA)
+#     print("ID:", ch.id, res)
 
-    # # DEBUG 3
-    # # Example chain from paper
-    # tau1 = Task(0,6,6)
-    # tau2 = Task(0,10,10)
-    # tau3 = Task(0,5,5)
-    # chain = CEChain(tau1, tau2, tau3)
-    # chain.calc_anchors()
+#     # # DEBUG 3
+#     # # Example chain from paper
+#     # tau1 = Task(0,6,6)
+#     # tau2 = Task(0,10,10)
+#     # tau3 = Task(0,5,5)
+#     # chain = CEChain(tau1, tau2, tau3)
+#     # chain.calc_anchors()
 
-    # print(chain.anchorsRT)
-    # print(chain.anchorsDA)
-    # print(chain.hyperperiod)
-    # print(chain.starttimes)
-    # print(analyze(chain))
-    # print(analyze(chain))
+#     # print(chain.anchorsRT)
+#     # print(chain.anchorsDA)
+#     # print(chain.hyperperiod)
+#     # print(chain.starttimes)
+#     # print(analyze(chain))
+#     # print(analyze(chain))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Analyze CEChain(s) from JSON/JSONL files.")
+    parser.add_argument("input", help="Input file (.json or .jsonl)")
+    parser.add_argument("-o", "--output", help="Output file to save results (must match format of input file) (optional)")
+    parser.add_argument("--format", choices=["json", "jsonl"], help="Force input format (optional)")
+    parser.add_argument("--no-print", action="store_true", help="Do not print results to stdout")
+    args = parser.parse_args()
+
+    # Determine format
+    input_ext = os.path.splitext(args.input)[1].lower()
+    fmt = args.format or ("jsonl" if input_ext == ".jsonl" else "json")
+
+    # Check output folder
+    if args.output:
+        ensure_filepath_exists(args.output)
+
+    results = []
+    if fmt == "json":
+        # Load
+        chain = load_chain_from_json(args.input)
+        # Analyze
+        res = analyze(chain)
+        results.append({"ID": chain.id, "analysis": res})
+
+        # Print
+        if not args.no_print:
+            print(json.dumps(res, indent=4))
+
+        # Store
+        if args.output:
+            with open(args.output, "w") as f:
+                json.dump(res, f, indent=4)
+    
+    else:
+        # Load
+        chains = load_chains_from_jsonl(args.input)
+        # Analyze
+        for chain in chains:
+            res = analyze(chain)
+            results.append({"ID": chain.id, "analysis": res})
+
+            # Print
+            if not args.no_print:
+                print(json.dumps(res))
+        
+        if args.output:
+            with open(args.output, "w") as f:
+                for r in results:
+                    f.write(json.dumps(r) + "\n")
+
+if __name__ == "__main__":
+    main()

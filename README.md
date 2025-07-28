@@ -8,10 +8,10 @@ There is a working pipeline for debugging.
 Just run 
 ```
 python generate.py chains/tests.jsonl
-python analysis.py ???
+python analysis.py chains/tests.jsonl
 ```
 
-To generate some cause-effect chains using WATERS, store them in ```test/test.jsonl``` and print analysis results
+To generate some cause-effect chains using WATERS, store them in ```chains/tests.jsonl``` and print analysis results
 
 
 ## What I observed so far:
