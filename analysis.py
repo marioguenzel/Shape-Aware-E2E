@@ -7,8 +7,12 @@ import itertools
 import time
 
 
+##########
+# Tasks and Cause-Effect Chains
+##########
+
 class Task:
-    """A simple task"""
+    """A simple task."""
     def __init__(self, phase, period, deadline):
         self.phase = phase
         self.period = period
@@ -39,8 +43,8 @@ class CEChain:
         self.hyperperiod = None
         self.warmup = None
         self.starttimes = None
-        self.anchorsDA = None  # Anchor points in overline I prime DA within the minimal set of anchor points 
-        self.anchorsRT = None# Anchor points in overline I prime RT within the minimal set of anchor points 
+        self.anchorsDA = None  # Minimal anchor points in $overline I'_{DA}$
+        self.anchorsRT = None  # Minimal anchor points in $overline I'_{RT}$
 
     def calc_hyperperiod(self):
         """Calculate and store hyperperiod parameter."""
@@ -83,7 +87,7 @@ class CEChain:
         self.starttimes = (self.tasks[0].re(self.warmup[0]), self.tasks[-1].we(self.warmup[-1]))
     
     def calc_anchors(self, p=None):
-        """Calculate anchor points over one hyperperiod"""
+        """Calculate anchor points during the interval $overline I'$."""
         if p is None:
             # Find index with maximal period
             p = max(range(len(self.tasks)), key=lambda i: self.tasks[i].period)
@@ -106,8 +110,6 @@ class CEChain:
             partend = self.tasks[-1].we(part[-1][-1])
             anchorsDA.append((partend, partend-partstart))
             anchorsRT.append((partstart, partend-partstart))
-
-        # TODO HERE
         
         def repeatentry(entry):
             return (entry[0] + self.hyperperiod, entry[1])
@@ -153,156 +155,81 @@ class CEChain:
         self.anchorsDA = anchorsDAfromI
 
 
-        # while True:
-        #     # Check if next is redundant
-        #     red = redundantRT(anchorsRT[0], anchorsRT[1])
-        #     # Remove first entry
-        #     anchorsRT.pop(0)
-        #     # Append and break if 
+##########
+# Data Handling
+##########
 
-        #     if redundantRT(anchorsRT[0], anchorsRT[1]):
-        #         anchorsRT.pop(0)
-        #     else:
-        #         anchorsRT.pop(0)
-        #         anchorsRT.append(repeatentry(anchorsRT[0]))
-        #         break
-            
-        #     # repeat first entry at the end if not redundant
-        #     newEntry = (anchorsRT[0][0] + self.hyperperiod , anchorsRT[0][1] + self.hyperperiod)
-        #     # Find x0
-        #     if x0RTfound is False:
 
-            
+def ensure_filepath_exists(filepath: str):
+    """Check if a filepath exists and create it if it doesn't."""
+    directory = os.path.dirname(filepath)
+    if directory and not os.path.exists(directory):
+        os.makedirs(directory)
 
-        # # Remove redundant anchors!
-        # for i in range(len(anchorsDA) - 1, -1, -1):  # iterating the list backwards while removing redundant anchors
-        #     currentDA = anchorsDA[i]
-        #     prevDA = anchorsDA[i-1]
-        #     if (currentDA[1] - prevDA[1]) == (currentDA[0] - prevDA[0]):    # Check if DA anchor is redundant
-        #         anchorsDA.pop(i-1)
 
-        #     currentRT = anchorsRT[i]
-        #     prevRT = anchorsRT[i-1]
-        #     if (prevRT[1] - currentRT[1]) == (currentRT[0] - prevRT[0]):    # Check if RT anchor is redundant
-        #         anchorsRT.pop(i)
-
-        # # Store anchors
-        # self.anchorsRT = anchorsRT  # Careful: The anchor on the starttime might be artificial, i.e., not needed when describing later hyperperiods.
-        # self.anchorsDA = anchorsDA
+def save_chain_as_json(chain: CEChain, filepath: str):
+    """Save CEChain object as JSON. Just stores the chain without the computed features.
     
-    def get_anchorsDA(self,fromtime, totime, leftborder=True,rightborder=True, artificialborder=False):
-        """Return all anchors within a given interval."""
-        # artificialborders adds an anchor on the RIGHT border such that the DA is fully defined inside the interval [fromtime, totime]
-        # leftborder and rightborder describe whether potential anchor points that lie right on the border of the interval should be included or not.
-        anchorsDA = list()
+    Example usage:
+    - save_chain_as_json(chain, "/path/to/output.json")
+    """
+    ensure_filepath_exists(filepath)
 
-        if self.anchorsDA == None:
-            self.calc_anchors()
+    chain_data = {
+        "ID": chain.id,
+        "tasks": [
+            {"phase": t.phase, "period": t.period, "deadline": t.deadline}
+            for t in chain.tasks
+        ]
+    }
 
-        relStart = fromtime % self.hyperperiod
-        hpOffset = fromtime // self.hyperperiod
-        index = 0
+    with open(filepath, "w") as f:
+        json.dump(chain_data, f, indent=4)
 
-        for anchor in self.anchorsDA:   # Find the start anchor
-            if leftborder:
-                if anchor[0] >= relStart:
-                    index = self.anchorsDA.index(anchor)
-                    break
-            else:
-                if anchor[0] > relStart:
-                    index = self.anchorsDA.index(anchor)
-                    break
-        
-        anchorsDA.append((self.anchorsDA[index][0] + (hpOffset * self.hyperperiod), self.anchorsDA[index][1]))
 
-        while anchorsDA[-1][0] < totime:    # Add anchors while the last anchor in the list is inside the interval
+def save_chains_as_jsonl(chains: list[CEChain], filepath: str):
+    """Save a list of CEChain objects as JSONL, one chain per line.
+    
+    Example usage:
+    - save_chain_as_jsonl(chain, "/path/to/output.jsonl")
+    """
+    ensure_filepath_exists(filepath)
 
-            index = index + 1
+    with open(filepath, "w") as f:
+        for chain in chains:
+            chain_data = {
+                "ID": chain.id,
+                "tasks": [
+                    {"phase": t.phase, "period": t.period, "deadline": t.deadline}
+                    for t in chain.tasks
+                ]
+            }
+            f.write(json.dumps(chain_data) + "\n")
 
-            if index >= len(self.anchorsDA):
-                index = 1
-                hpOffset = hpOffset + 1
 
-            nextAnchor = (self.anchorsDA[index][0] + self.hyperperiod * hpOffset, self.anchorsDA[index][1])
+def load_chain_from_json(filepath: str) -> CEChain:
+    """Load a CEChain object from a JSON file."""
+    with open(filepath, "r") as f:
+        chain_data = json.load(f)
+    
+    tasks = [Task(t["phase"], t["period"], t["deadline"]) for t in chain_data["tasks"]]
+    return CEChain(*tasks, id=chain_data["ID"])
 
-            anchorsDA.append(nextAnchor)
 
-        if anchorsDA[-1][0] > totime:
-            nextAnchor = anchorsDA.pop(-1)   # the last added anchor is likely outside the interval
-            
-            if artificialborder:
-                diff = nextAnchor[0] - totime
-                artificialAnchor = (nextAnchor[0] - diff, nextAnchor[1] - diff)
-                anchorsDA.append(artificialAnchor)
+def load_chains_from_jsonl(filepath: str) -> list[CEChain]:
+    """Load a list of CEChain objects from a JSONL file."""
+    chains = []
+    with open(filepath, "r") as f:
+        for line in f:
+            chain_data = json.loads(line.strip())
+            tasks = [Task(t["phase"], t["period"], t["deadline"]) for t in chain_data["tasks"]]
+            chains.append(CEChain(*tasks, id=chain_data["ID"]))
+    return chains
 
-        if not rightborder:     
-            if anchorsDA[-1][0] == totime:
-                anchorsDA.pop(-1)   # if rightboarder is not included remove an anchor if it lies on the right boarder
 
-        
-        return anchorsDA
-
-    def get_anchorsRT(self,fromtime, totime, leftborder=True,rightborder=True, artificialborder=False):
-        # artificialborders adds an anchor on the LEFT border such that the RT is fully defined inside the interval [fromtime, totime]
-        # leftborder and rightborder describe whether potential anchor points that lie right on the border of the interval should be included or not.
-        anchorsRT = list()
-
-        if self.anchorsRT == None:
-            self.calc_anchors()
-
-        relStart = fromtime % self.hyperperiod
-        hpOffset = fromtime // self.hyperperiod
-        index = 0
-
-        for anchor in self.anchorsRT:   # Find the start anchor
-            if leftborder:
-                if anchor[0] >= relStart:
-                    index = self.anchorsRT.index(anchor)
-                    break
-            else:
-                if anchor[0] > relStart:
-                    index = self.anchorsRT.index(anchor)
-                    break
-        
-        fristRealAnchor = (self.anchorsRT[index][0] + (hpOffset * self.hyperperiod), self.anchorsRT[index][1])
-        
-        if artificialborder:
-            if fristRealAnchor[0] > fromtime:
-                diff = fristRealAnchor[0] - fromtime
-                artificialAnchor = (fristRealAnchor[0] - diff, fristRealAnchor[1] + diff)
-                anchorsRT.append(artificialAnchor)
-
-        anchorsRT.append(fristRealAnchor)
-
-        while anchorsRT[-1][0] < totime:    # Add anchors while the last anchor in the list is inside the interval
-
-            index = index + 1
-
-            if index >= len(self.anchorsRT):
-                index = 1
-                hpOffset = hpOffset + 1
-
-            nextAnchor = (self.anchorsRT[index][0] + self.hyperperiod * hpOffset, self.anchorsRT[index][1])
-
-            anchorsRT.append(nextAnchor)
-
-        if anchorsRT[-1][0] > totime:
-            nextAnchor = anchorsRT.pop(-1)   # the last added anchor is likely outside the interval
-
-        if not rightborder:     
-            if anchorsRT[-1][0] == totime:
-                anchorsRT.pop(-1)   # if rightboarder is not included remove an anchor if it lies on the right boarder
-
-        
-        return anchorsRT
-
-    def _check_RT_anchor_artificial(self):
-        # The anchor at starttime is artitifical iff there is no anchor on starttime+hyperperiod
-        if self.starttimes[0] + self.hyperperiod in [x for x,y in self.anchorsRT]:
-            return False
-        else: 
-            return True
-
+##########
+# Analysis
+##########
 
 def analyze(chain: CEChain):
 
@@ -440,65 +367,11 @@ def throughput(chain: CEChain):
     # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
     return chain.hyperperiod / (len(chain.anchorsDA) -1)
 
-# === DATA HANDLING ===
-
-def ensure_filepath_exists(filepath: str):
-    """Check if a filepath exists and create it if it doesn't."""
-    directory = os.path.dirname(filepath)
-    if directory and not os.path.exists(directory):
-        os.makedirs(directory)
 
 
-def save_chain_as_json(chain: CEChain, filepath: str):
-    """Save CEChain object as JSON. Just stores the chain without the computed features."""
-    chain_data = {
-        "ID": chain.id,
-        "tasks": [
-            {"phase": t.phase, "period": t.period, "deadline": t.deadline}
-            for t in chain.tasks
-        ]
-    }
-
-    with open(filepath, "w") as f:
-        json.dump(chain_data, f, indent=4)
-
-
-def save_chains_as_jsonl(chains: list[CEChain], filepath: str):
-    """Save a list of CEChain objects as JSONL, one chain per line."""
-
-    with open(filepath, "w") as f:
-        for chain in chains:
-            chain_data = {
-                "ID": chain.id,
-                "tasks": [
-                    {"phase": t.phase, "period": t.period, "deadline": t.deadline}
-                    for t in chain.tasks
-                ]
-            }
-            f.write(json.dumps(chain_data) + "\n")
-
-
-def load_chain_from_json(filepath: str) -> CEChain:
-    """Load a CEChain object from a JSON file."""
-    with open(filepath, "r") as f:
-        chain_data = json.load(f)
-    
-    tasks = [Task(t["phase"], t["period"], t["deadline"]) for t in chain_data["tasks"]]
-    return CEChain(*tasks, id=chain_data["ID"])
-
-
-def load_chains_from_jsonl(filepath: str) -> list[CEChain]:
-    """Load a list of CEChain objects from a JSONL file."""
-    chains = []
-    with open(filepath, "r") as f:
-        for line in f:
-            chain_data = json.loads(line.strip())
-            tasks = [Task(t["phase"], t["period"], t["deadline"]) for t in chain_data["tasks"]]
-            chains.append(CEChain(*tasks, id=chain_data["ID"]))
-    return chains
-
-# Example usage:
-# save_chain_as_json(chain, "/path/to/output.json")
+##########
+# Main
+##########
 
 
 if __name__ == '__main__':
@@ -512,7 +385,6 @@ if __name__ == '__main__':
     # print(chain.anchorsDA)
     # print(chain.hyperperiod)
     # print(chain.starttimes)
-    # print(chain._check_RT_anchor_artificial())
 
     # DEBUG 2
     chains = load_chains_from_jsonl("test/test.jsonl")
@@ -531,10 +403,5 @@ if __name__ == '__main__':
     # print(chain.anchorsDA)
     # print(chain.hyperperiod)
     # print(chain.starttimes)
-    # print(chain._check_RT_anchor_artificial())
     # print(analyze(chain))
     # print(analyze(chain))
-
-    #print(chain.get_anchorsDA(0, chain.hyperperiod * 3))
-    #print(chain.get_anchorsRT(10, chain.hyperperiod * 3))
-    # breakpoint()

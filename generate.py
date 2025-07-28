@@ -1,12 +1,5 @@
-
-
-
-import json
-import random
-import numpy as np
 from scipy import stats
-from collections import Counter
-from analysis import ensure_filepath_exists
+from analysis import save_chains_as_jsonl, CEChain, Task
 
 def gen_periods_WATERS(number: int):
     """Main function to generate a task set with the WATERS benchmark.
@@ -28,26 +21,15 @@ def gen_periods_WATERS(number: int):
 
 def generateSynchronousImplicitWATERS(number_tasks, number_chains, filename):
     """Generate cause-effect chains using the WATERS periods, with phase=0 and implicit deadlines."""
-
-    # Make sure filepath exists
-    ensure_filepath_exists(filename)
     
     # Generate CE chains
-    periods_for_chains = []
-    for _ in range(number_chains):
-        periods_for_chains.append(gen_periods_WATERS(number_tasks))
+    chains = []
+    for idx in range(number_chains):
+        periods = gen_periods_WATERS(number_tasks)
+        chains.append(CEChain(*[Task(0, per, per) for per in periods], id=idx))
     
     # Store CE chains
-    with open(filename, "w") as f:
-        for ceid, periods in enumerate(periods_for_chains):
-            chain_data = {
-                "ID": ceid,
-                "tasks": [
-                    {"phase": 0, "period": per, "deadline": per}
-                    for per in periods
-                ]
-            }
-            f.write(json.dumps(chain_data) + "\n")
+    save_chains_as_jsonl(chains, filename)
 
 
 if __name__ == "__main__":
