@@ -1,8 +1,9 @@
 from scipy import stats
 from analysis import save_chains_as_jsonl, CEChain, Task
+import random
 
 def gen_periods_WATERS(number: int):
-    """Main function to generate a task set with the WATERS benchmark.
+    """Generate a task periods with the WATERS distribution.
     Output: taskset
 
     Variables:
@@ -20,18 +21,33 @@ def gen_periods_WATERS(number: int):
 
 
 def generateSynchronousImplicitWATERS(number_tasks, number_chains, filename):
-    """Generate cause-effect chains using the WATERS periods, with phase=0 and implicit deadlines."""
+    """Generate cause-effect chains using the WATERS periods, with random phase and implicit deadlines."""
     
     # Generate CE chains
     chains = []
     for idx in range(number_chains):
         periods = gen_periods_WATERS(number_tasks)
-        chains.append(CEChain(*[Task(0, per, per) for per in periods], id=idx))
+        chains.append(CEChain(*[Task(random.randint(0,per), per, per) for per in periods], id=idx))
     
     # Store CE chains
     save_chains_as_jsonl(chains, filename)
 
 
+def gen_periods_uniform(number: int, periods: list):
+    """Draw periods uniformly from a given set of periods."""
+    return random.choices(periods, k=number)
+
+def generateUniform(number_tasks, number_chains, filename):
+    """Generate cause-effect chains with uniform periods, random phase and implicit deadlines."""
+    chains = []
+    periods_list = list(range(10, 401, 10))
+    for idx in range(number_chains):
+        periods = gen_periods_uniform(number_tasks, periods_list)
+        chains.append(CEChain(*[Task(random.randint(0,per), per, per) for per in periods], id=idx))
+    save_chains_as_jsonl(chains, filename)
+    
+
 if __name__ == "__main__":
     # Generate 10 test CE chains with 5 tasks each using WATERS periods
-    generateSynchronousImplicitWATERS(10,10,"test/test.jsonl") 
+    generateSynchronousImplicitWATERS(10,10000,"test/test.jsonl") 
+    # generateUniform(5,10000,"test/test.jsonl") 

@@ -239,13 +239,13 @@ def analyze(chain: CEChain):
     results = dict()
     if chain.anchorsRT is None or chain.anchorsDA is None:
         chain.calc_anchors()
-    
-    # # Anchors for RT and DA over one hyperperiod starting after the warmup phase
-    # anchorsRT = chain.get_anchorsRT(chain.tasks[0].re(chain.warmup[0]), chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod, rightborder=False)
-    # anchorsDA = chain.get_anchorsDA(chain.tasks[-1].we(chain.warmup[-1]), chain.tasks[-1].we(chain.warmup[-1]) + chain.hyperperiod, leftborder=True)
-    
-    print("Anchors RT: ", chain.anchorsRT)
-    print("Anchors DA: ", chain.anchorsDA)
+
+    # print("Anchors RT: ", chain.anchorsRT)
+    # print("Anchors DA: ", chain.anchorsDA)
+
+    # Number of anchor points
+    results['#AnchorsRT'] = len(chain.anchorsRT)-1
+    results['#AnchorsDA'] = len(chain.anchorsDA)-1
 
     # Max RT and Max DA
     results['MaxRT'] = maximumRT(chain)
@@ -365,7 +365,7 @@ def throughput(chain: CEChain):
         chain.calc_hyperperiod()
 
     # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
-    return chain.hyperperiod / (len(chain.anchorsDA) -1)
+    return (len(chain.anchorsDA) -1) / chain.hyperperiod
 
 
 
@@ -389,7 +389,10 @@ if __name__ == '__main__':
     # DEBUG 2
     chains = load_chains_from_jsonl("test/test.jsonl")
     for ch in chains:
-       print("ID:", ch.id, analyze(ch))
+        res = analyze(ch)
+        print("ID:", ch.id, res)
+        if res['AvRT'] != res['AvDA']:
+            breakpoint()
 
     # # DEBUG 3
     # # Example chain from paper
