@@ -1,6 +1,7 @@
 from scipy import stats
 from analysis import save_chains_as_jsonl, CEChain, Task
 import random
+import argparse
 
 def gen_periods_WATERS(number: int):
     """Generate a task periods with the WATERS distribution."""
@@ -47,4 +48,17 @@ def generateUniform(number_tasks, number_chains, filename):
 if __name__ == "__main__":
     # Generate 10 test CE chains with 5 tasks each using WATERS periods
     # generateSynchronousImplicitWATERS(10,1000,"test/test.jsonl") 
-    generateUniform(5,1000,"test/test.jsonl") 
+    # generateUniform(5,1000,"test/test.jsonl") 
+
+    parser = argparse.ArgumentParser(description="Generate CE chains with specified benchmark and parameters.")
+    parser.add_argument("--bench", choices=["WATERS", "UNI"], default="WATERS", help="Benchmark type: WATERS or UNI (default: WATERS)")
+    parser.add_argument("--tasks", type=int, default=5, help="Number of tasks per chain (default: 5)")
+    parser.add_argument("--sets", type=int, default=10, help="Number of chains to generate (default:10)")
+    parser.add_argument("filename", type=str, help="Output filename (e.g., 'chains/tests.jsonl')")
+
+    args = parser.parse_args()
+
+    if args.bench == "WATERS":
+        generateSynchronousImplicitWATERS(args.tasks, args.sets, args.filename)
+    elif args.bench == "UNI":
+        generateUniform(args.tasks, args.sets, args.filename)
