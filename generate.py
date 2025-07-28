@@ -52,4 +52,4 @@ def generateSynchronousImplicitWATERS(number_tasks, number_chains, filename):
 
 if __name__ == "__main__":
     # Generate 10 test CE chains with 5 tasks each using WATERS periods
-    generateSynchronousImplicitWATERS(5,10,"test/test.jsonl") 
+    generateSynchronousImplicitWATERS(10,10,"test/test.jsonl") 

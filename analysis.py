@@ -3,6 +3,8 @@ import math
 import json
 import random
 import os
+import itertools
+import time
 
 
 class Task:
@@ -37,8 +39,8 @@ class CEChain:
         self.hyperperiod = None
         self.warmup = None
         self.starttimes = None
-        self.anchorsDA = None
-        self.anchorsRT = None
+        self.anchorsDA = None  # Anchor points in overline I prime DA within the minimal set of anchor points 
+        self.anchorsRT = None# Anchor points in overline I prime RT within the minimal set of anchor points 
 
     def calc_hyperperiod(self):
         """Calculate and store hyperperiod parameter."""
@@ -91,34 +93,102 @@ class CEChain:
         if self.hyperperiod is None:
             self.calc_hyperperiod()
 
-        # For each partitioned jobchains within a hyperperiod set an anchor
+        # Lists of anchor points
         anchorsDA = list()
         anchorsRT = list()
-
+        
+        # Find anchor points over first hyperperiod
         assert self.hyperperiod/self.tasks[p].period == self.hyperperiod//self.tasks[p].period
-        for jobidx in range(self.warmup[p],self.warmup[p]+self.hyperperiod//self.tasks[p].period + 1):
-            # Cal partitioned job chain
+        for jobidx in range(self.warmup[p],self.warmup[p]+self.hyperperiod//self.tasks[p].period):
+            # Calculate partitioned job chain
             part = self._part(p, jobidx)
             partstart = self.tasks[0].re(part[0][0])
             partend = self.tasks[-1].we(part[-1][-1])
             anchorsDA.append((partend, partend-partstart))
             anchorsRT.append((partstart, partend-partstart))
+
+        # TODO HERE
         
-        # Remove redundant anchors!
-        for i in range(len(anchorsDA) - 1, -1, -1):  # iterating the list backwards while removing redundant anchors
-            currentDA = anchorsDA[i]
-            prevDA = anchorsDA[i-1]
-            if (currentDA[1] - prevDA[1]) == (currentDA[0] - prevDA[0]):    # Check if DA anchor is redundant
-                anchorsDA.pop(i-1)
+        def repeatentry(entry):
+            return (entry[0] + self.hyperperiod, entry[1])
 
-            currentRT = anchorsRT[i]
-            prevRT = anchorsRT[i-1]
-            if (prevRT[1] - currentRT[1]) == (currentRT[0] - prevRT[0]):    # Check if RT anchor is redundant
-                anchorsRT.pop(i)
+        # == RT anchors ==
+        def redundantRT(entry1,entry2):
+            """Returns True if entry2 is redundant"""
+            return entry1[1] - entry2[1] == entry2[0] - entry1[0]
 
-        # Store anchors
-        self.anchorsRT = anchorsRT  # Careful: The anchor on the starttime might be artificial, i.e., not needed when describing later hyperperiods.
-        self.anchorsDA = anchorsDA
+        # Repeat first entry (First entry can potentially be non-redundant later on)
+        anchorsRT.append(repeatentry(anchorsRT[0]))
+        
+        # Find anchor points in I 
+        anchorsRTfromI = []
+        for idx in range(len(anchorsRT) - 1):
+            if not redundantRT(anchorsRT[idx], anchorsRT[idx+1]):
+                anchorsRTfromI.append(anchorsRT[idx+1])
+        anchorsRTfromI.append(repeatentry(anchorsRTfromI[0]))
+
+        assert len(anchorsRTfromI)>1
+        assert redundantRT(anchorsRTfromI[-2], anchorsRTfromI[-1]) is False
+
+        # == DA anchors ==
+        def redundantDA(entry1,entry2):
+            """Returns True if entry1 is redundant"""
+            return entry2[1] - entry1[1] == entry2[0] - entry1[0]
+        
+        # Repeat first entry (First entry can potentially be non-redundant later on)
+        anchorsDA.append(repeatentry(anchorsDA[0]))
+
+        # Find anchor points in I
+        anchorsDAfromI = []
+        for idx in range(len(anchorsDA)-1):
+            if not redundantDA(anchorsDA[idx], anchorsDA[idx+1]):
+                anchorsDAfromI.append(anchorsDA[idx])
+        anchorsDAfromI.append(repeatentry(anchorsDAfromI[0]))
+
+        assert len(anchorsDAfromI)>1
+        assert redundantDA(anchorsDAfromI[-2], anchorsDAfromI[-1]) is False
+
+        # == Store anchors ==
+        self.anchorsRT = anchorsRTfromI  # Careful: The anchor on the starttime might be artificial, i.e., not needed when describing later hyperperiods.
+        self.anchorsDA = anchorsDAfromI
+
+
+        # while True:
+        #     # Check if next is redundant
+        #     red = redundantRT(anchorsRT[0], anchorsRT[1])
+        #     # Remove first entry
+        #     anchorsRT.pop(0)
+        #     # Append and break if 
+
+        #     if redundantRT(anchorsRT[0], anchorsRT[1]):
+        #         anchorsRT.pop(0)
+        #     else:
+        #         anchorsRT.pop(0)
+        #         anchorsRT.append(repeatentry(anchorsRT[0]))
+        #         break
+            
+        #     # repeat first entry at the end if not redundant
+        #     newEntry = (anchorsRT[0][0] + self.hyperperiod , anchorsRT[0][1] + self.hyperperiod)
+        #     # Find x0
+        #     if x0RTfound is False:
+
+            
+
+        # # Remove redundant anchors!
+        # for i in range(len(anchorsDA) - 1, -1, -1):  # iterating the list backwards while removing redundant anchors
+        #     currentDA = anchorsDA[i]
+        #     prevDA = anchorsDA[i-1]
+        #     if (currentDA[1] - prevDA[1]) == (currentDA[0] - prevDA[0]):    # Check if DA anchor is redundant
+        #         anchorsDA.pop(i-1)
+
+        #     currentRT = anchorsRT[i]
+        #     prevRT = anchorsRT[i-1]
+        #     if (prevRT[1] - currentRT[1]) == (currentRT[0] - prevRT[0]):    # Check if RT anchor is redundant
+        #         anchorsRT.pop(i)
+
+        # # Store anchors
+        # self.anchorsRT = anchorsRT  # Careful: The anchor on the starttime might be artificial, i.e., not needed when describing later hyperperiods.
+        # self.anchorsDA = anchorsDA
     
     def get_anchorsDA(self,fromtime, totime, leftborder=True,rightborder=True, artificialborder=False):
         """Return all anchors within a given interval."""
@@ -235,44 +305,67 @@ class CEChain:
 
 
 def analyze(chain: CEChain):
+
+    # Start timer
+    start_time = time.time()
+
     results = dict()
     if chain.anchorsRT is None or chain.anchorsDA is None:
         chain.calc_anchors()
     
-    # Anchors for RT and DA over one hyperperiod starting after the warmup phase
-    anchorsRT = chain.get_anchorsRT(chain.tasks[0].re(chain.warmup[0]), chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod, rightborder=False)
-    anchorsDA = chain.get_anchorsDA(chain.tasks[-1].we(chain.warmup[-1]), chain.tasks[-1].we(chain.warmup[-1]) + chain.hyperperiod, leftborder=True)
+    # # Anchors for RT and DA over one hyperperiod starting after the warmup phase
+    # anchorsRT = chain.get_anchorsRT(chain.tasks[0].re(chain.warmup[0]), chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod, rightborder=False)
+    # anchorsDA = chain.get_anchorsDA(chain.tasks[-1].we(chain.warmup[-1]), chain.tasks[-1].we(chain.warmup[-1]) + chain.hyperperiod, leftborder=True)
     
-    print("Anchors RT: ", anchorsRT)
-    print("Anchors DA: ", anchorsDA)
+    print("Anchors RT: ", chain.anchorsRT)
+    print("Anchors DA: ", chain.anchorsDA)
 
     # Max RT and Max DA
-    results['MaxRT'] = max([y for x,y in anchorsRT])
-    results['MaxDA'] = max([y for x,y in anchorsDA])
+    results['MaxRT'] = maximumRT(chain)
+    results['MaxDA'] = maximumDA(chain)
     assert results['MaxRT'] == results['MaxDA']
 
     # Min RT and Min DA
-    results['MinRT'] = minimumRT(anchorsRT)
-    results['MinDA'] = minimumDA(anchorsDA)
+    results['MinRT'] = minimumRT(chain)
+    results['MinDA'] = minimumDA(chain)
 
     # Average
-    results['AvRT'] = averageRT(chain, anchorsRT)
-    results['AvDA'] = averageDA(chain, anchorsDA)
+    results['AvRT'] = averageRT(chain)
+    results['AvDA'] = averageDA(chain)
 
     # Throughput
-    results['throughp'] = chain.hyperperiod / len(chain.get_anchorsDA(chain.tasks[-1].we(chain.warmup[-1]), chain.tasks[-1].we(chain.warmup[-1]) + chain.hyperperiod, leftborder=False))
+    results['throughp'] = throughput(chain)
 
     # Longest Consecutive Exceedance
 
-    
 
+    end_time = time.time()
+    results['analysis_time_sec'] = end_time - start_time
+
+    
     return results
 
-def minimumRT(anchorsRT):
+def maximumRT(chain: CEChain):
+    '''Maximum Reaction Time (MRT/MaxRT)'''
+    if chain.anchorsRT is None:
+        chain.calc_anchors()
+    return max([y for x,y in chain.anchorsRT])
+
+def maximumDA(chain: CEChain):
+    '''Maximum Data Age (MDA/MaxDA)'''
+    if chain.anchorsDA is None:
+        chain.calc_anchors()
+    return max([y for x,y in chain.anchorsDA])
+
+def minimumRT(chain: CEChain):
+    '''Minimum Reaction Time (MinRT)'''
+    if chain.anchorsRT is None:
+        chain.calc_anchors()
+    
     minRT = None
-    for i in range(len(anchorsRT) - 1):
-        currentX, currentY = anchorsRT[i]
-        nextX, nextY = anchorsRT[i+1]
+    for idx in range(len(chain.anchorsRT) - 1):
+        currentX, currentY = chain.anchorsRT[idx]
+        nextX, nextY = chain.anchorsRT[idx+1]
 
         rt = currentY - (nextX - currentX)
 
@@ -282,11 +375,15 @@ def minimumRT(anchorsRT):
             minRT = min(minRT, rt)
     return minRT
 
-def minimumDA(anchorsDA):
+def minimumDA(chain: CEChain):
+    '''Minimum Data Age (MinDA)'''
+    if chain.anchorsDA is None:
+        chain.calc_anchors()
+
     minDA = None
-    for i in range(len(anchorsDA) - 1):
-        prevX, prevY = anchorsDA[i]
-        currentX, currentY = anchorsDA[i+1]
+    for idx in range(len(chain.anchorsDA) - 1):
+        prevX, prevY = chain.anchorsDA[idx]
+        currentX, currentY = chain.anchorsDA[idx+1]
 
         da = currentY - (currentX - prevX)
 
@@ -296,39 +393,52 @@ def minimumDA(anchorsDA):
             minDA = min(minDA, da)
     return minDA
 
-def averageRT(chain, anchorsRT):
+def averageRT(chain: CEChain):
+    '''Average Reaction Time (AvRT)'''
+    if chain.anchorsRT is None:
+        chain.calc_anchors()
     
     avRT = 0
+    for idx in range(len(chain.anchorsRT)-1):
+        currentX, currentY = chain.anchorsRT[idx]
+        nextX, nextY = chain.anchorsRT[idx+1]
 
-    for i in range(len(anchorsRT)):
-        curr = anchorsRT[i]
-        if (len(anchorsRT)-1 == i):
-            next = (chain.tasks[0].re(chain.warmup[0]) + chain.hyperperiod, None)    # y-value not used
-        else:
-            next = anchorsRT[i+1]
+        yHat = currentY - (nextX - currentX)
 
-        yBar = curr[1] - (next[0] - curr[0])
+        avRT = avRT + ((nextX - currentX) * (currentY + yHat))
 
-        avRT = avRT + ((next[0] - curr[0]) * (curr[1] + yBar))
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
 
     return avRT / (2 * chain.hyperperiod)
 
-def averageDA(chain, anchorsDA):
-    
+def averageDA(chain: CEChain):
+    '''Average Data Age (AvDA)'''
+    if chain.anchorsDA is None:
+        chain.calc_anchors()
+
     avDA = 0
+    for idx in range(len(chain.anchorsDA)-1):
+        prevX, prevY = chain.anchorsDA[idx]
+        currentX, currentY = chain.anchorsDA[idx+1]
 
-    for i in range(len(anchorsDA)):
-        curr = anchorsDA[i]
-        if i == 0:
-            prev = (chain.tasks[-1].we(chain.warmup[-1]), None) # y-value not used
-        else:
-            prev = anchorsDA[i-1]
+        yHat = currentY - (currentX - prevX)
+        avDA = avDA + ((currentX - prevX) * (currentY + yHat))
 
-        yBar = curr[1] - (curr[0] - prev[0])
-
-        avDA = avDA + ((curr[0] - prev[0]) * (curr[1] + yBar))
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
 
     return avDA / (2 * chain.hyperperiod)
+
+def throughput(chain: CEChain):
+    '''Throughput'''
+    if chain.anchorsDA is None:
+        chain.calc_anchors()
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
+
+    # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
+    return chain.hyperperiod / (len(chain.anchorsDA) -1)
 
 # === DATA HANDLING ===
 
@@ -405,24 +515,25 @@ if __name__ == '__main__':
     # print(chain._check_RT_anchor_artificial())
 
     # DEBUG 2
-    #chains = load_chains_from_jsonl("test/test.jsonl")
-    #for ch in chains:
-    #    print("ID:", ch.id, analyze(ch))
+    chains = load_chains_from_jsonl("test/test.jsonl")
+    for ch in chains:
+       print("ID:", ch.id, analyze(ch))
 
-    # DEBUG 3
-    # Example chain from paper
-    tau1 = Task(0,6,6)
-    tau2 = Task(0,10,10)
-    tau3 = Task(0,5,5)
-    chain = CEChain(tau1, tau2, tau3)
-    chain.calc_anchors()
+    # # DEBUG 3
+    # # Example chain from paper
+    # tau1 = Task(0,6,6)
+    # tau2 = Task(0,10,10)
+    # tau3 = Task(0,5,5)
+    # chain = CEChain(tau1, tau2, tau3)
+    # chain.calc_anchors()
 
-    print(chain.anchorsRT)
-    print(chain.anchorsDA)
-    print(chain.hyperperiod)
-    print(chain.starttimes)
-    print(chain._check_RT_anchor_artificial())
-    print(analyze(chain))
+    # print(chain.anchorsRT)
+    # print(chain.anchorsDA)
+    # print(chain.hyperperiod)
+    # print(chain.starttimes)
+    # print(chain._check_RT_anchor_artificial())
+    # print(analyze(chain))
+    # print(analyze(chain))
 
     #print(chain.get_anchorsDA(0, chain.hyperperiod * 3))
     #print(chain.get_anchorsRT(10, chain.hyperperiod * 3))
