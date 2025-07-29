@@ -8,6 +8,8 @@ import time
 import argparse
 
 
+MKRange = (1,10)  # Range of k for (m,k) to be evaluated
+
 ##########
 # Tasks and Cause-Effect Chains
 ##########
@@ -378,6 +380,117 @@ def throughput(chain: CEChain):
     # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
     return (len(chain.anchorsDA) -1) / chain.hyperperiod
 
+def mkRT(chain: CEChain, bound):
+    """Weakly hard chain-level (m,k) constrains for Reaction time. 
+    Returns the (m,k) constraints with the smallest m which are satisfied for bound with k specified in MKRange."""
+    if chain.anchorsRT is None:
+        chain.calc_anchors()
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
+    
+    FP_list = []
+    length = 0
+    anchors = chain.anchorsRT
+    T1 = chain.tasks[0].period
+    hyperperiod = chain.hyperperiod
+
+    for i in range(len(anchors) - 1):
+        x_i, y_i = anchors[i]
+        x_next, _ = anchors[i + 1]
+
+        assert (x_next - x_i) // T1 == (x_next - x_i) / T1 # Make sure that anchors are actually integer multiples
+        N_anc = (x_next - x_i) // T1
+        N_fail = min(math.ceil((y_i - (bound + T1)) / T1), N_anc)
+        FP_list.append((N_fail, 'F'))
+        FP_list.append((N_anc - N_fail, 'P'))
+        length += N_anc
+    original_length = len(FP_list)
+
+    i = 0
+    while length < (hyperperiod / T1) + MKRange[1] - 1:
+        FP_list.append(FP_list[i])
+        length += FP_list[i][0]
+        i += 1
+
+    # Construct results vector
+    mk_results = [0 for k in range(MKRange[0],MKRange[1]+1)]
+    for idx in range(original_length):
+        if FP_list[idx][1] == 'F':
+            this_res = []
+            # Start a new iteration
+            for k in range(MKRange[0], MKRange[1] + 1):
+                misses = 0
+                total_count = 0
+                j = idx
+                while total_count < k:
+                    nextNumber, nextFP = FP_list[j]
+                    if nextNumber >= k - total_count:
+                        nextNumber = k - total_count
+                    total_count += nextNumber
+                    if nextFP == 'F':
+                        misses += nextNumber
+                    j += 1
+                
+                mk_results[k - MKRange[0]] = max(mk_results[k - MKRange[0]], misses)
+
+    return list(zip(mk_results,list(range(MKRange[0],MKRange[1]+1))))
+
+def mkDA(chain: CEChain, bound):
+    """Weakly hard chain-level (m,k) constrains for Data Age. 
+    Returns the (m,k) constraints with the smallest m which are satisfied for bound with k specified in MKRange."""
+    if chain.anchorsDA is None:
+        chain.calc_anchors()
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
+    
+    FP_list = []
+    length = 0
+    anchors = chain.anchorsDA
+    Tn = chain.tasks[-1].period
+    hyperperiod = chain.hyperperiod
+
+    for i in range(len(anchors) - 1):
+        x_i, y_i = anchors[i]
+        x_next, y_next = anchors[i + 1]
+
+        assert (x_next - x_i) // Tn == (x_next - x_i) / Tn # Make sure that anchors are actually integer multiples
+        N_anc = (x_next - x_i) // Tn
+        N_fail = min(math.ceil((y_next - (bound + Tn)) / Tn), N_anc)
+        FP_list.append((N_anc - N_fail, 'P'))
+        FP_list.append((N_fail, 'F'))
+        length += N_anc
+    original_length = len(FP_list)
+
+    i = 0
+    while length < (hyperperiod / Tn) + MKRange[1] - 1:
+        FP_list.append(FP_list[i])
+        length += FP_list[i][0]
+        i += 1
+
+    # Construct results vector
+    mk_results = [0 for k in range(MKRange[0],MKRange[1]+1)]
+    for idx in range(original_length):
+        if FP_list[idx][1] == 'F':
+            this_res = []
+            # Start a new iteration
+            for k in range(MKRange[0], MKRange[1] + 1):
+                misses = 0
+                total_count = 0
+                j = idx
+                while total_count < k:
+                    nextNumber, nextFP = FP_list[j]
+                    if nextNumber >= k - total_count:
+                        nextNumber = k - total_count
+                    total_count += nextNumber
+                    if nextFP == 'F':
+                        misses += nextNumber
+                    j += 1
+                
+                mk_results[k - MKRange[0]] = max(mk_results[k - MKRange[0]], misses)
+
+    return list(zip(mk_results,list(range(MKRange[0],MKRange[1]+1))))
+
+
 def longestExceedanceRT(chain: CEChain, bound):
     """Longest Consecutive Exceedance for Reaction Time (LE_{RT}) for a given bound."""
     
@@ -450,6 +563,7 @@ def main():
     parser.add_argument("-o", "--output", help="Output file to save results (must match format of input file) (optional)")
     parser.add_argument("--format", choices=["json", "jsonl"], help="Force input format (optional)")
     parser.add_argument("--no-print", action="store_true", help="Do not print results to stdout")
+    parser.add_argument("--mk", type=float, help="If set, perform (m,k) analysis with the given bound")
     args = parser.parse_args()
 
     # Determine format
@@ -466,6 +580,9 @@ def main():
         chain = load_chain_from_json(args.input)
         # Analyze
         res = analyze(chain)
+        if args.mk:
+            res['mkRT'] = mkRT(chain, args.mk)
+            res['mkDA'] = mkDA(chain, args.mk)
         results.append({"ID": chain.id, "analysis": res})
 
         # Print
@@ -483,6 +600,9 @@ def main():
         # Analyze
         for chain in chains:
             res = analyze(chain)
+            if args.mk:
+                res['mkRT'] = mkRT(chain, args.mk)
+                res['mkDA'] = mkDA(chain, args.mk)
             results.append({"ID": chain.id, "analysis": res})
 
             # Print
