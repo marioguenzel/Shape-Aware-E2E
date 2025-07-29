@@ -4,11 +4,13 @@ import json
 import random
 import os
 import itertools
+import sys
 import time
 import argparse
 
 
 MKRange = (1,10)  # Range of k for (m,k) to be evaluated
+OBS_CHECKS = True  # Check whether observations about equality hold. Otherwise call a breakpoint()
 
 ##########
 # Tasks and Cause-Effect Chains
@@ -497,17 +499,111 @@ def mkDA(chain: CEChain, bound):
 
 def longestExceedanceRT(chain: CEChain, bound):
     """Longest Consecutive Exceedance for Reaction Time (LE_{RT}) for a given bound."""
+    if chain.anchorsRT is None:
+        chain.calc_anchors()
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
+
+    assert chain.anchorsRT[0][0] + chain.hyperperiod == chain.anchorsRT[-1][0]
+
+    # Determine exceedance intervals
+    exceedance_intervals = []
+    for idx in range(len(chain.anchorsRT)-1):
+        currentX, currentY = chain.anchorsRT[idx]
+        nextX, nextY = chain.anchorsRT[idx+1]
+
+        if currentY > bound:
+            exceedance_intervals.append((currentX, currentX + min(currentY - bound, nextX - currentX)))
     
-    # To be done
-    # Make sure to return infty if length is full interval    
-    return None
+    # Extend to two hyperperiods
+    extended = exceedance_intervals[:]
+    for start,finish in exceedance_intervals:
+        extended.append((start + chain.hyperperiod, finish + chain.hyperperiod))    
+    exceedance_intervals = extended
+    
+    # Merge exceedance intervals
+    merged_exceedance_intervals = []
+
+    if len(exceedance_intervals) <= 1:
+        merged_exceedance_intervals = exceedance_intervals
+    else:
+        current_start, current_end = exceedance_intervals[0]
+        for idx in range(1,len(exceedance_intervals)):
+            next_start, next_end = exceedance_intervals[idx]
+
+            if current_end == next_start:
+                # merge interval
+                current_end = next_end
+            
+            else:
+                # append and start new interval
+                merged_exceedance_intervals.append((current_start, current_end))
+                current_start, current_end = next_start, next_end
+        
+        # Add last interval after finishing loop
+        merged_exceedance_intervals.append((current_start, current_end))
+
+    
+    # Calculate longest interval
+    longest = max([0] + [end-start for start,end in merged_exceedance_intervals])
+    if longest == 2* chain.hyperperiod:
+        longest = math.inf
+    
+    return longest
 
 def longestExceedanceDA(chain: CEChain, bound):
     """Longest Consecutive Exceedance for Data Age (LE_{DA}) for a given bound."""
+    if chain.anchorsDA is None:
+        chain.calc_anchors()
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
+
+    assert chain.anchorsDA[0][0] + chain.hyperperiod == chain.anchorsDA[-1][0]
+
+    # Determine exceedance intervals
+    exceedance_intervals = []
+    for idx in range(len(chain.anchorsDA)-1):
+        currentX, currentY = chain.anchorsDA[idx]
+        nextX, nextY = chain.anchorsDA[idx+1]
+
+        if nextY > bound:
+            exceedance_intervals.append((nextX - min(nextY - bound, nextX - currentX), nextX))
     
-    # To be done
-    # Make sure to return infty if length is full interval    
-    return None
+    # Extend to two hyperperiods
+    extended = exceedance_intervals[:]
+    for start,finish in exceedance_intervals:
+        extended.append((start + chain.hyperperiod, finish + chain.hyperperiod))    
+    exceedance_intervals = extended
+    
+    # Merge exceedance intervals
+    merged_exceedance_intervals = []
+
+    if len(exceedance_intervals) <= 1:
+        merged_exceedance_intervals = exceedance_intervals
+    else:
+        current_start, current_end = exceedance_intervals[0]
+        for idx in range(1,len(exceedance_intervals)):
+            next_start, next_end = exceedance_intervals[idx]
+
+            if current_end == next_start:
+                # merge interval
+                current_end = next_end
+            
+            else:
+                # append and start new interval
+                merged_exceedance_intervals.append((current_start, current_end))
+                current_start, current_end = next_start, next_end
+        
+        # Add last interval after finishing loop
+        merged_exceedance_intervals.append((current_start, current_end))
+
+    
+    # Calculate longest interval
+    longest = max([0] + [end-start for start,end in merged_exceedance_intervals])
+    if longest == 2* chain.hyperperiod:
+        longest = math.inf
+    
+    return longest
 
 ##########
 # Main
@@ -559,6 +655,11 @@ def longestExceedanceDA(chain: CEChain, bound):
 #     # print(analyze(chain))
 #     # print(analyze(chain))
 
+def observation_checks(res):
+    equals = [("MaxRT","MaxDA"), ("MinRT","MinDA"), ("AvRT","AvDA"), ("LET-RT","LET-DA"),]
+    for eq1, eq2 in equals:
+        if eq1 in res and eq2 in res and res[eq1] != res[eq2]:
+            breakpoint()
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze CEChain(s) from JSON/JSONL files.")
@@ -566,10 +667,14 @@ def main():
     parser.add_argument("-o", "--output", help="Output file to save results (must match format of input file) (optional)")
     parser.add_argument("--format", choices=["json", "jsonl"], help="Force input format (optional)")
     parser.add_argument("--no-print", action="store_true", help="Do not print results to stdout")
-    parser.add_argument("--mk", type=float, help="If set, perform (m,k) analysis with the given bound")
-    # TODO Give the option to choose mk bound relative to average RT
+    parser.add_argument("--bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given bound")
+    parser.add_argument("--relative-bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * AvRT)")
 
     args = parser.parse_args()
+
+    if args.bound is not None and args.relative_bound is not None:
+        print("Error: You cannot specify both --bound and --relative-bound at the same time.")
+        sys.exit(1)
 
     # Determine format
     input_ext = os.path.splitext(args.input)[1].lower()
@@ -579,41 +684,69 @@ def main():
     if args.output:
         ensure_filepath_exists(args.output)
 
-    results = []
-    if fmt == "json":
+
+    if fmt == "json":  # == json ==
         # Load
         chain = load_chain_from_json(args.input)
         # Analyze
+        res = dict()
         res["ID"] = chain.id
         res.update(analyze(chain))
-        if args.mk:
-            res['mkRT'] = mkRT(chain, args.mk)
-            res['mkDA'] = mkDA(chain, args.mk)
+        if args.relative_bound or args.bound:
+            if args.relative_bound:
+                bound = args.relative_bound * res["AvRT"]
+            else:
+                bound = args.bound
+            
+            res['mkRT'] = mkRT(chain, bound)
+            res['mkDA'] = mkDA(chain, bound)
+
+            res['LE-RT'] = longestExceedanceRT(chain, bound)
+            res['LE-DA'] = longestExceedanceDA(chain, bound)
 
         # Print
         if not args.no_print:
             print(json.dumps(res, indent=4))
+
+        # Checking observations
+        if OBS_CHECKS:
+            observation_checks(res)
 
         # Store
         if args.output:
             with open(args.output, "w") as f:
                 json.dump(res, f, indent=4)
     
-    else:
+    else:  # == jsonl ==
         # Load
         chains = load_chains_from_jsonl(args.input)
         # Analyze
+        results = []
         for chain in chains:
             res = dict()
             res["ID"] = chain.id
             res.update(analyze(chain))
-            if args.mk:
-                res['mkRT'] = mkRT(chain, args.mk)
-                res['mkDA'] = mkDA(chain, args.mk)
+            if args.relative_bound or args.bound:
+                if args.relative_bound:
+                    bound = args.relative_bound * res["AvRT"]
+                else:
+                    bound = args.bound
+                
+                res['mkRT'] = mkRT(chain, bound)
+                res['mkDA'] = mkDA(chain, bound)
+
+                res['LE-RT'] = longestExceedanceRT(chain, bound)
+                res['LE-DA'] = longestExceedanceDA(chain, bound)
+            
+            results.append(res)
  
             # Print
             if not args.no_print:
                 print(json.dumps(res))
+
+            # Checking observations
+            if OBS_CHECKS:
+                observation_checks(res)
         
         if args.output:
             with open(args.output, "w") as f:
