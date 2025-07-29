@@ -401,13 +401,14 @@ def mkRT(chain: CEChain, bound):
         assert (x_next - x_i) // T1 == (x_next - x_i) / T1 # Make sure that anchors are actually integer multiples
         N_anc = (x_next - x_i) // T1
         N_fail = min(math.ceil((y_i - (bound + T1)) / T1), N_anc)
+        N_fail = max(N_fail,0)  # corner case with very large bound
         FP_list.append((N_fail, 'F'))
         FP_list.append((N_anc - N_fail, 'P'))
         length += N_anc
     original_length = len(FP_list)
 
     i = 0
-    while length < (hyperperiod / T1) + MKRange[1] - 1:
+    while length < (hyperperiod / T1) + MKRange[1]:
         FP_list.append(FP_list[i])
         length += FP_list[i][0]
         i += 1
@@ -416,7 +417,6 @@ def mkRT(chain: CEChain, bound):
     mk_results = [0 for k in range(MKRange[0],MKRange[1]+1)]
     for idx in range(original_length):
         if FP_list[idx][1] == 'F':
-            this_res = []
             # Start a new iteration
             for k in range(MKRange[0], MKRange[1] + 1):
                 misses = 0
@@ -456,37 +456,41 @@ def mkDA(chain: CEChain, bound):
         assert (x_next - x_i) // Tn == (x_next - x_i) / Tn # Make sure that anchors are actually integer multiples
         N_anc = (x_next - x_i) // Tn
         N_fail = min(math.ceil((y_next - (bound + Tn)) / Tn), N_anc)
+        N_fail = max(N_fail,0)  # corner case with very large bound
         FP_list.append((N_anc - N_fail, 'P'))
         FP_list.append((N_fail, 'F'))
         length += N_anc
     original_length = len(FP_list)
 
     i = 0
-    while length < (hyperperiod / Tn) + MKRange[1] - 1:
+    while length < (hyperperiod / Tn) + MKRange[1]:
         FP_list.append(FP_list[i])
         length += FP_list[i][0]
         i += 1
 
     # Construct results vector
     mk_results = [0 for k in range(MKRange[0],MKRange[1]+1)]
-    for idx in range(original_length):
-        if FP_list[idx][1] == 'F':
-            this_res = []
-            # Start a new iteration
-            for k in range(MKRange[0], MKRange[1] + 1):
-                misses = 0
-                total_count = 0
-                j = idx
-                while total_count < k:
-                    nextNumber, nextFP = FP_list[j]
-                    if nextNumber >= k - total_count:
-                        nextNumber = k - total_count
-                    total_count += nextNumber
-                    if nextFP == 'F':
-                        misses += nextNumber
-                    j += 1
-                
-                mk_results[k - MKRange[0]] = max(mk_results[k - MKRange[0]], misses)
+
+    try:
+        for idx in range(original_length):
+            if FP_list[idx][1] == 'F':
+                # Start a new iteration
+                for k in range(MKRange[0], MKRange[1] + 1):
+                    misses = 0
+                    total_count = 0
+                    j = idx
+                    while total_count < k:
+                        nextNumber, nextFP = FP_list[j]
+                        if nextNumber >= k - total_count:
+                            nextNumber = k - total_count
+                        total_count += nextNumber
+                        if nextFP == 'F':
+                            misses += nextNumber
+                        j += 1
+                    
+                    mk_results[k - MKRange[0]] = max(mk_results[k - MKRange[0]], misses)
+    except:
+        breakpoint()
 
     return list(zip(mk_results,list(range(MKRange[0],MKRange[1]+1))))
 
@@ -579,11 +583,11 @@ def main():
         # Load
         chain = load_chain_from_json(args.input)
         # Analyze
-        res = analyze(chain)
+        res["ID"] = chain.id
+        res.update(analyze(chain))
         if args.mk:
             res['mkRT'] = mkRT(chain, args.mk)
             res['mkDA'] = mkDA(chain, args.mk)
-        results.append({"ID": chain.id, "analysis": res})
 
         # Print
         if not args.no_print:
@@ -599,12 +603,13 @@ def main():
         chains = load_chains_from_jsonl(args.input)
         # Analyze
         for chain in chains:
-            res = analyze(chain)
+            res = dict()
+            res["ID"] = chain.id
+            res.update(analyze(chain))
             if args.mk:
                 res['mkRT'] = mkRT(chain, args.mk)
                 res['mkDA'] = mkDA(chain, args.mk)
-            results.append({"ID": chain.id, "analysis": res})
-
+ 
             # Print
             if not args.no_print:
                 print(json.dumps(res))
