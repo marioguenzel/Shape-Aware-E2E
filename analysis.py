@@ -509,7 +509,6 @@ def longestExceedanceDA(chain: CEChain, bound):
     # Make sure to return infty if length is full interval    
     return None
 
-
 ##########
 # Main
 ##########
@@ -568,6 +567,8 @@ def main():
     parser.add_argument("--format", choices=["json", "jsonl"], help="Force input format (optional)")
     parser.add_argument("--no-print", action="store_true", help="Do not print results to stdout")
     parser.add_argument("--mk", type=float, help="If set, perform (m,k) analysis with the given bound")
+    # TODO Give the option to choose mk bound relative to average RT
+
     args = parser.parse_args()
 
     # Determine format
