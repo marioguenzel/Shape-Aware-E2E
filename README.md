@@ -226,3 +226,6 @@ This generates two plots ```tutorial/plot1.png``` ```tutorial/plot2.png``` simil
 
 The generation of test data, analysis and the generation of plots that are displayed in the paper is fully automated using the script ```automatic_eval.sh```.
 It creates a new folder ```paperdata/``` containing all the relevant files. 
+
+
+- TODO: Create automatic_eval.sh
