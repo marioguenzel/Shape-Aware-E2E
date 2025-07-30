@@ -246,7 +246,9 @@ def load_chains_from_jsonl(filepath: str) -> list[CEChain]:
 # Analysis
 ##########
 
-def analyze(chain: CEChain):
+def analyze(chain: CEChain, info=False, bound=None, relative_bound=None):
+
+    assert not (bound and relative_bound), "cannot specify bound and relative bound at the same time"
 
     # Start timer
     start_time = time.time()
@@ -254,13 +256,20 @@ def analyze(chain: CEChain):
     results = dict()
     if chain.anchorsRT is None or chain.anchorsDA is None:
         chain.calc_anchors()
+    
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
 
     # print("Anchors RT: ", chain.anchorsRT)
     # print("Anchors DA: ", chain.anchorsDA)
 
-    # Number of anchor points
-    results['#AnchorsRT'] = len(chain.anchorsRT)-1
-    results['#AnchorsDA'] = len(chain.anchorsDA)-1
+    if info:
+        # Number of anchor points
+        results['#AnchorsRT'] = len(chain.anchorsRT)-1
+        results['#AnchorsDA'] = len(chain.anchorsDA)-1
+
+        # hyperperiod/maxperiod
+        results['H/Tp'] = chain.hyperperiod / max([tsk.period for tsk in chain.tasks])
 
     # Max RT and Max DA
     results['MaxRT'] = maximumRT(chain)
@@ -278,13 +287,20 @@ def analyze(chain: CEChain):
     # Throughput
     results['throughp'] = throughput(chain)
 
-    # Longest Consecutive Exceedance
+    if relative_bound:
+        bound = relative_bound * results["AvRT"]
+
+    if bound:
+        results['mkRT'] = mkRT(chain, bound)
+        results['mkDA'] = mkDA(chain, bound)
+
+        results['LE-RT'] = longestExceedanceRT(chain, bound)
+        results['LE-DA'] = longestExceedanceDA(chain, bound)
 
 
     end_time = time.time()
     results['analysis_time_sec'] = end_time - start_time
 
-    
     return results
 
 def maximumRT(chain: CEChain):
@@ -609,52 +625,6 @@ def longestExceedanceDA(chain: CEChain, bound):
 # Main
 ##########
 
-
-# if __name__ == '__main__':
-#     # DEBUG 1
-#     # tau1 = Task(0,50,50)
-#     # tau2 = Task(0,120,120)
-#     # chain = CEChain(tau1, tau2)
-#     # chain.calc_anchors()
-
-#     # print(chain.anchorsRT)
-#     # print(chain.anchorsDA)
-#     # print(chain.hyperperiod)
-#     # print(chain.starttimes)
-
-#     # # DEBUG 2
-#     # chains = load_chains_from_jsonl("test/test.jsonl")
-#     # for ch in chains:
-#     #     res = analyze(ch)
-#     #     print("ID:", ch.id, res)
-#     #     if res['AvRT'] != res['AvDA']:
-#     #         breakpoint()
-        
-#     #     if res['#AnchorsRT'] != res['#AnchorsDA']:
-#     #         breakpoint()
-
-    
-#     ch = [c for c in load_chains_from_jsonl("test/test.jsonl") if c.id == 992][0]
-#     res = analyze(ch)
-#     print(ch.anchorsRT)
-#     print(ch.anchorsDA)
-#     print("ID:", ch.id, res)
-
-#     # # DEBUG 3
-#     # # Example chain from paper
-#     # tau1 = Task(0,6,6)
-#     # tau2 = Task(0,10,10)
-#     # tau3 = Task(0,5,5)
-#     # chain = CEChain(tau1, tau2, tau3)
-#     # chain.calc_anchors()
-
-#     # print(chain.anchorsRT)
-#     # print(chain.anchorsDA)
-#     # print(chain.hyperperiod)
-#     # print(chain.starttimes)
-#     # print(analyze(chain))
-#     # print(analyze(chain))
-
 def observation_checks(res):
     equals = [("MaxRT","MaxDA"), ("MinRT","MinDA"), ("AvRT","AvDA"), ("LET-RT","LET-DA"),]
     for eq1, eq2 in equals:
@@ -662,13 +632,13 @@ def observation_checks(res):
             breakpoint()
 
 def main():
-    parser = argparse.ArgumentParser(description="Analyze CEChain(s) from JSON/JSONL files.")
-    parser.add_argument("input", help="Input file (.json or .jsonl)")
-    parser.add_argument("-o", "--output", help="Output file to save results (must match format of input file) (optional)")
-    parser.add_argument("--format", choices=["json", "jsonl"], help="Force input format (optional)")
+    parser = argparse.ArgumentParser(description="Analyze CEChains from JSONL file.")
+    parser.add_argument("input", help="Input file (.jsonl)")
+    parser.add_argument("-o", "--output", help="Output file to save results (optional)")
     parser.add_argument("--no-print", action="store_true", help="Do not print results to stdout")
-    parser.add_argument("--bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given bound")
-    parser.add_argument("--relative-bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * AvRT)")
+    parser.add_argument("-b", "--bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given bound")
+    parser.add_argument("-rb", "--relative-bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * AvRT)")
+    parser.add_argument("-i", "--info", action="store_true", help="Store additional information such as number of anchor points in the results vector.")
 
     args = parser.parse_args()
 
@@ -676,82 +646,33 @@ def main():
         print("Error: You cannot specify both --bound and --relative-bound at the same time.")
         sys.exit(1)
 
-    # Determine format
-    input_ext = os.path.splitext(args.input)[1].lower()
-    fmt = args.format or ("jsonl" if input_ext == ".jsonl" else "json")
-
     # Check output folder
     if args.output:
         ensure_filepath_exists(args.output)
 
+    # Load
+    chains = load_chains_from_jsonl(args.input)
 
-    if fmt == "json":  # == json ==
-        # Load
-        chain = load_chain_from_json(args.input)
-        # Analyze
+    # Analyze
+    results = []
+    for chain in chains:
         res = dict()
         res["ID"] = chain.id
-        res.update(analyze(chain))
-        if args.relative_bound or args.bound:
-            if args.relative_bound:
-                bound = args.relative_bound * res["AvRT"]
-            else:
-                bound = args.bound
-            
-            res['mkRT'] = mkRT(chain, bound)
-            res['mkDA'] = mkDA(chain, bound)
-
-            res['LE-RT'] = longestExceedanceRT(chain, bound)
-            res['LE-DA'] = longestExceedanceDA(chain, bound)
+        res.update(analyze(chain, info=args.info, bound=args.bound, relative_bound=args.relative_bound))
+        results.append(res)
 
         # Print
         if not args.no_print:
-            print(json.dumps(res, indent=4))
+            print(json.dumps(res))
 
         # Checking observations
         if OBS_CHECKS:
             observation_checks(res)
-
-        # Store
-        if args.output:
-            with open(args.output, "w") as f:
-                json.dump(res, f, indent=4)
     
-    else:  # == jsonl ==
-        # Load
-        chains = load_chains_from_jsonl(args.input)
-        # Analyze
-        results = []
-        for chain in chains:
-            res = dict()
-            res["ID"] = chain.id
-            res.update(analyze(chain))
-            if args.relative_bound or args.bound:
-                if args.relative_bound:
-                    bound = args.relative_bound * res["AvRT"]
-                else:
-                    bound = args.bound
-                
-                res['mkRT'] = mkRT(chain, bound)
-                res['mkDA'] = mkDA(chain, bound)
-
-                res['LE-RT'] = longestExceedanceRT(chain, bound)
-                res['LE-DA'] = longestExceedanceDA(chain, bound)
-            
-            results.append(res)
- 
-            # Print
-            if not args.no_print:
-                print(json.dumps(res))
-
-            # Checking observations
-            if OBS_CHECKS:
-                observation_checks(res)
-        
-        if args.output:
-            with open(args.output, "w") as f:
-                for r in results:
-                    f.write(json.dumps(r) + "\n")
+    if args.output:
+        with open(args.output, "w") as f:
+            for r in results:
+                f.write(json.dumps(r) + "\n")
 
 if __name__ == "__main__":
     main()
