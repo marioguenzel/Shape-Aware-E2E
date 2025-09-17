@@ -10,7 +10,6 @@ import argparse
 
 
 MKRange = (1,10)  # Range of k for (m,k) to be evaluated
-OBS_CHECKS = True  # Check whether observations about equality hold. Otherwise call a breakpoint()
 
 ##########
 # Tasks and Cause-Effect Chains
@@ -48,7 +47,6 @@ class CEChain:
         self.hyperperiod = None
         self.warmup = None
         self.starttimes = None
-        self.anchorsDA = None  # Minimal anchor points in $overline I'_{DA}$
         self.anchorsRT = None  # Minimal anchor points in $overline I'_{RT}$
 
     def calc_hyperperiod(self):
@@ -102,8 +100,7 @@ class CEChain:
         if self.hyperperiod is None:
             self.calc_hyperperiod()
 
-        # Lists of anchor points
-        anchorsDA = list()
+        # List of anchor points
         anchorsRT = list()
         
         # Find anchor points over first hyperperiod
@@ -115,12 +112,6 @@ class CEChain:
             partend = self.tasks[-1].we(part[-1][-1])
 
             # If there is already such a point, keep the highest one
-            if len(anchorsDA) != 0 and anchorsDA[-1][0] == partend:
-                anchorsDA[-1] = (partend, max(anchorsDA[-1][1], partend-partstart))
-            else:  # Otherwise, we append
-                anchorsDA.append((partend, partend-partstart))
-
-            # Same for RT
             if len(anchorsRT) != 0 and anchorsRT[-1][0] == partstart:
                 anchorsRT[-1] = (partstart,max(anchorsRT[-1][1], partend-partstart))
             else:
@@ -147,27 +138,8 @@ class CEChain:
         assert len(anchorsRTfromI)>1
         assert redundantRT(anchorsRTfromI[-2], anchorsRTfromI[-1]) is False
 
-        # == DA anchors ==
-        def redundantDA(entry1,entry2):
-            """Returns True if entry1 is redundant"""
-            return entry2[1] - entry1[1] == entry2[0] - entry1[0]
-        
-        # Repeat first entry (First entry can potentially be non-redundant later on)
-        anchorsDA.append(repeatentry(anchorsDA[0]))
-
-        # Find anchor points in I
-        anchorsDAfromI = []
-        for idx in range(len(anchorsDA)-1):
-            if not redundantDA(anchorsDA[idx], anchorsDA[idx+1]):
-                anchorsDAfromI.append(anchorsDA[idx])
-        anchorsDAfromI.append(repeatentry(anchorsDAfromI[0]))
-
-        assert len(anchorsDAfromI)>1
-        assert redundantDA(anchorsDAfromI[-2], anchorsDAfromI[-1]) is False
-
         # == Store anchors ==
         self.anchorsRT = anchorsRTfromI  # Careful: The anchor on the starttime might be artificial, i.e., not needed when describing later hyperperiods.
-        self.anchorsDA = anchorsDAfromI
 
 
 ##########
@@ -254,35 +226,29 @@ def analyze(chain: CEChain, info=False, bound=None, relative_bound=None):
     start_time = time.time()
 
     results = dict()
-    if chain.anchorsRT is None or chain.anchorsDA is None:
+    if chain.anchorsRT is None:
         chain.calc_anchors()
     
     if chain.hyperperiod is None:
         chain.calc_hyperperiod()
 
     # print("Anchors RT: ", chain.anchorsRT)
-    # print("Anchors DA: ", chain.anchorsDA)
 
     if info:
         # Number of anchor points
         results['#AnchorsRT'] = len(chain.anchorsRT)-1
-        results['#AnchorsDA'] = len(chain.anchorsDA)-1
 
         # hyperperiod/maxperiod
         results['H/Tp'] = chain.hyperperiod / max([tsk.period for tsk in chain.tasks])
 
-    # Max RT and Max DA
+    # Max RT
     results['MaxRT'] = maximumRT(chain)
-    results['MaxDA'] = maximumDA(chain)
-    assert results['MaxRT'] == results['MaxDA']
 
-    # Min RT and Min DA
+    # Min RT
     results['MinRT'] = minimumRT(chain)
-    results['MinDA'] = minimumDA(chain)
 
     # Average
     results['AvRT'] = averageRT(chain)
-    results['AvDA'] = averageDA(chain)
 
     # Throughput
     results['throughp'] = throughput(chain)
@@ -292,10 +258,8 @@ def analyze(chain: CEChain, info=False, bound=None, relative_bound=None):
 
     if bound:
         results['mkRT'] = mkRT(chain, bound)
-        results['mkDA'] = mkDA(chain, bound)
 
         results['LE-RT'] = longestExceedanceRT(chain, bound)
-        results['LE-DA'] = longestExceedanceDA(chain, bound)
 
 
     end_time = time.time()
@@ -308,12 +272,6 @@ def maximumRT(chain: CEChain):
     if chain.anchorsRT is None:
         chain.calc_anchors()
     return max([y for x,y in chain.anchorsRT])
-
-def maximumDA(chain: CEChain):
-    '''Maximum Data Age (MDA/MaxDA)'''
-    if chain.anchorsDA is None:
-        chain.calc_anchors()
-    return max([y for x,y in chain.anchorsDA])
 
 def minimumRT(chain: CEChain):
     '''Minimum Reaction Time (MinRT)'''
@@ -332,24 +290,6 @@ def minimumRT(chain: CEChain):
         else:
             minRT = min(minRT, rt)
     return minRT
-
-def minimumDA(chain: CEChain):
-    '''Minimum Data Age (MinDA)'''
-    if chain.anchorsDA is None:
-        chain.calc_anchors()
-
-    minDA = None
-    for idx in range(len(chain.anchorsDA) - 1):
-        prevX, prevY = chain.anchorsDA[idx]
-        currentX, currentY = chain.anchorsDA[idx+1]
-
-        da = currentY - (currentX - prevX)
-
-        if minDA == None:
-            minDA = da
-        else:
-            minDA = min(minDA, da)
-    return minDA
 
 def averageRT(chain: CEChain):
     '''Average Reaction Time (AvRT)'''
@@ -370,33 +310,17 @@ def averageRT(chain: CEChain):
 
     return avRT / (2 * chain.hyperperiod)
 
-def averageDA(chain: CEChain):
-    '''Average Data Age (AvDA)'''
-    if chain.anchorsDA is None:
-        chain.calc_anchors()
-
-    avDA = 0
-    for idx in range(len(chain.anchorsDA)-1):
-        prevX, prevY = chain.anchorsDA[idx]
-        currentX, currentY = chain.anchorsDA[idx+1]
-
-        yHat = currentY - (currentX - prevX)
-        avDA = avDA + ((currentX - prevX) * (currentY + yHat))
-
-    if chain.hyperperiod is None:
-        chain.calc_hyperperiod()
-
-    return avDA / (2 * chain.hyperperiod)
-
 def throughput(chain: CEChain):
     '''Throughput'''
-    if chain.anchorsDA is None:
-        chain.calc_anchors()
-    if chain.hyperperiod is None:
-        chain.calc_hyperperiod()
+    return 0    
 
-    # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
-    return (len(chain.anchorsDA) -1) / chain.hyperperiod
+    # if chain.anchorsDA is None:
+    #     chain.calc_anchors()
+    # if chain.hyperperiod is None:
+    #     chain.calc_hyperperiod()
+
+    # # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
+    # return (len(chain.anchorsDA) -1) / chain.hyperperiod
 
 def mkRT(chain: CEChain, bound):
     """Weakly hard chain-level (m,k) constrains for Reaction time. 
@@ -453,66 +377,6 @@ def mkRT(chain: CEChain, bound):
 
     return list(zip(mk_results,list(range(MKRange[0],MKRange[1]+1))))
 
-def mkDA(chain: CEChain, bound):
-    """Weakly hard chain-level (m,k) constrains for Data Age. 
-    Returns the (m,k) constraints with the smallest m which are satisfied for bound with k specified in MKRange."""
-    if chain.anchorsDA is None:
-        chain.calc_anchors()
-    if chain.hyperperiod is None:
-        chain.calc_hyperperiod()
-    
-    FP_list = []
-    length = 0
-    anchors = chain.anchorsDA
-    Tn = chain.tasks[-1].period
-    hyperperiod = chain.hyperperiod
-
-    for i in range(len(anchors) - 1):
-        x_i, y_i = anchors[i]
-        x_next, y_next = anchors[i + 1]
-
-        assert (x_next - x_i) // Tn == (x_next - x_i) / Tn # Make sure that anchors are actually integer multiples
-        N_anc = (x_next - x_i) // Tn
-        N_fail = min(math.ceil((y_next - (bound + Tn)) / Tn), N_anc)
-        N_fail = max(N_fail,0)  # corner case with very large bound
-        FP_list.append((N_anc - N_fail, 'P'))
-        FP_list.append((N_fail, 'F'))
-        length += N_anc
-    original_length = len(FP_list)
-
-    i = 0
-    while length < (hyperperiod / Tn) + MKRange[1]:
-        FP_list.append(FP_list[i])
-        length += FP_list[i][0]
-        i += 1
-
-    # Construct results vector
-    mk_results = [0 for k in range(MKRange[0],MKRange[1]+1)]
-
-    try:
-        for idx in range(original_length):
-            if FP_list[idx][1] == 'F':
-                # Start a new iteration
-                for k in range(MKRange[0], MKRange[1] + 1):
-                    misses = 0
-                    total_count = 0
-                    j = idx
-                    while total_count < k:
-                        nextNumber, nextFP = FP_list[j]
-                        if nextNumber >= k - total_count:
-                            nextNumber = k - total_count
-                        total_count += nextNumber
-                        if nextFP == 'F':
-                            misses += nextNumber
-                        j += 1
-                    
-                    mk_results[k - MKRange[0]] = max(mk_results[k - MKRange[0]], misses)
-    except:
-        breakpoint()
-
-    return list(zip(mk_results,list(range(MKRange[0],MKRange[1]+1))))
-
-
 def longestExceedanceRT(chain: CEChain, bound):
     """Longest Consecutive Exceedance for Reaction Time (LE_{RT}) for a given bound."""
     if chain.anchorsRT is None:
@@ -567,69 +431,10 @@ def longestExceedanceRT(chain: CEChain, bound):
     
     return longest
 
-def longestExceedanceDA(chain: CEChain, bound):
-    """Longest Consecutive Exceedance for Data Age (LE_{DA}) for a given bound."""
-    if chain.anchorsDA is None:
-        chain.calc_anchors()
-    if chain.hyperperiod is None:
-        chain.calc_hyperperiod()
-
-    assert chain.anchorsDA[0][0] + chain.hyperperiod == chain.anchorsDA[-1][0]
-
-    # Determine exceedance intervals
-    exceedance_intervals = []
-    for idx in range(len(chain.anchorsDA)-1):
-        currentX, currentY = chain.anchorsDA[idx]
-        nextX, nextY = chain.anchorsDA[idx+1]
-
-        if nextY > bound:
-            exceedance_intervals.append((nextX - min(nextY - bound, nextX - currentX), nextX))
-    
-    # Extend to two hyperperiods
-    extended = exceedance_intervals[:]
-    for start,finish in exceedance_intervals:
-        extended.append((start + chain.hyperperiod, finish + chain.hyperperiod))    
-    exceedance_intervals = extended
-    
-    # Merge exceedance intervals
-    merged_exceedance_intervals = []
-
-    if len(exceedance_intervals) <= 1:
-        merged_exceedance_intervals = exceedance_intervals
-    else:
-        current_start, current_end = exceedance_intervals[0]
-        for idx in range(1,len(exceedance_intervals)):
-            next_start, next_end = exceedance_intervals[idx]
-
-            if current_end == next_start:
-                # merge interval
-                current_end = next_end
-            
-            else:
-                # append and start new interval
-                merged_exceedance_intervals.append((current_start, current_end))
-                current_start, current_end = next_start, next_end
-        
-        # Add last interval after finishing loop
-        merged_exceedance_intervals.append((current_start, current_end))
-
-    
-    # Calculate longest interval
-    longest = max([0] + [end-start for start,end in merged_exceedance_intervals])
-    if longest == 2* chain.hyperperiod:
-        longest = math.inf
-    
-    return longest
 
 ##########
 # Main
 ##########
-
-def observation_checks(res):
-    equals = [("MaxRT","MaxDA"), ("MinRT","MinDA"), ("AvRT","AvDA"), ("LET-RT","LET-DA"),]
-    for eq1, eq2 in equals:
-        if eq1 in res and eq2 in res and res[eq1] != res[eq2]:
-            breakpoint()
 
 def main():
     parser = argparse.ArgumentParser(description="Analyze CEChains from JSONL file.")
@@ -665,9 +470,6 @@ def main():
         if not args.no_print:
             print(json.dumps(res))
 
-        # Checking observations
-        if OBS_CHECKS:
-            observation_checks(res)
     
     if args.output:
         with open(args.output, "w") as f:
