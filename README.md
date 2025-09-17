@@ -101,7 +101,7 @@ The framework has three parts:
 
 ### Cause-effect chain generator
 
-The cause-effect chain generator can be started using ```python3.12 generator.py```. 
+The cause-effect chain generator can be started using ```python3.12 generate.py```. 
 
 ```
 usage: generate.py [-h] [--bench {WATERS,UNI}] [--tasks TASKS] [--sets SETS] [--startid STARTID] [--maxHTp MAXHTP] filename
