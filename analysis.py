@@ -243,6 +243,7 @@ def analyze(chain: CEChain, info=False, bound=None, relative_bound=None):
 
     # Max RT
     results['MaxRT'] = maximumRT(chain)
+    # results['MaxRedRT'] = results['MaxRT'] - chain.tasks[0].period
 
     # Min RT
     results['MinRT'] = minimumRT(chain)
@@ -254,7 +255,8 @@ def analyze(chain: CEChain, info=False, bound=None, relative_bound=None):
     results['throughp'] = throughput(chain)
 
     if relative_bound:
-        bound = relative_bound * results["AvRT"]
+        bound = relative_bound * results["MaxRT"] 
+        # bound = relative_bound * (results["MaxRT"] - chain.tasks[0].period )
 
     if bound:
         results['mkRT'] = mkRT(chain, bound)
@@ -311,16 +313,15 @@ def averageRT(chain: CEChain):
     return avRT / (2 * chain.hyperperiod)
 
 def throughput(chain: CEChain):
-    '''Throughput'''
-    return 0    
+    '''Throughput''' 
 
-    # if chain.anchorsDA is None:
-    #     chain.calc_anchors()
-    # if chain.hyperperiod is None:
-    #     chain.calc_hyperperiod()
+    if chain.anchorsRT is None:
+        chain.calc_anchors()
+    if chain.hyperperiod is None:
+        chain.calc_hyperperiod()
 
-    # # Note: left anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
-    # return (len(chain.anchorsDA) -1) / chain.hyperperiod
+    # Note: right anchor point is removed as described in the analysis (since first and last anchor point are exactly one hyperperiod apart)
+    return (len(chain.anchorsRT) -1) / chain.hyperperiod
 
 def mkRT(chain: CEChain, bound):
     """Weakly hard chain-level (m,k) constrains for Reaction time. 
@@ -442,7 +443,7 @@ def main():
     parser.add_argument("-o", "--output", help="Output file to save results (optional)")
     parser.add_argument("--no-print", action="store_true", help="Do not print results to stdout")
     parser.add_argument("-b", "--bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given bound")
-    parser.add_argument("-rb", "--relative-bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * AvRT)")
+    parser.add_argument("-rb", "--relative-bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * MaxRT)")
     parser.add_argument("-i", "--info", action="store_true", help="Store additional information such as number of anchor points in the results vector.")
 
     args = parser.parse_args()
