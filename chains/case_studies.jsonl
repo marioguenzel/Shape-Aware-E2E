@@ -1,7 +1,5 @@
 {"ID": "WATERS16/17 EffectChain1", "tasks": [{"phase":0, "period":10, "deadline":10}, {"phase":0, "period":10, "deadline":10}, {"phase":0, "period":10, "deadline":10}, {"phase":0, "period":10, "deadline":10}]}
 {"ID": "WATERS16/17 EffectChain2", "tasks": [{"phase":0, "period":100, "deadline":100}, {"phase":0, "period":10, "deadline":10}, {"phase":0, "period":2, "deadline":2}]}
-{"ID": "WATERS16/17 EffectChain3 in us, task1 min", "tasks": [{"phase":0, "period":700, "deadline":700}, {"phase":0, "period":2000, "deadline":2000}, {"phase":0, "period":50000, "deadline":50000}]}
-{"ID": "WATERS16/17 EffectChain3 in us, task1 min", "tasks": [{"phase":0, "period":800, "deadline":800}, {"phase":0, "period":2000, "deadline":2000}, {"phase":0, "period":50000, "deadline":50000}]}
 {"ID": "WATERS2019, LG->LOC->EKF->Planner->DASM", "tasks": [{"phase":0, "period":33, "deadline":33}, {"phase":0, "period":400, "deadline":400}, {"phase":0, "period":15, "deadline":15}, {"phase":0, "period":15, "deadline":15}, {"phase":0, "period":5, "deadline":5}]}
 {"ID": "WATERS2019, CAN->LOC->EKF->Planner->DASM", "tasks": [{"phase":0, "period":10, "deadline":10}, {"phase":0, "period":400, "deadline":400}, {"phase":0, "period":15, "deadline":15}, {"phase":0, "period":15, "deadline":15}, {"phase":0, "period":5, "deadline":5}]}
 {"ID": "WATERS2019, CAN->EKF->Planner->DASM", "tasks": [{"phase":0, "period":10, "deadline":10}, {"phase":0, "period":15, "deadline":15}, {"phase":0, "period":15, "deadline":15}, {"phase":0, "period":5, "deadline":5}]}
