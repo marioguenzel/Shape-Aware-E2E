@@ -22,6 +22,10 @@ python3 make_table.py results/case_studies.jsonl > paperdata/case_studies.tex
 
 echo "Table of Case-Study results stored in: paperdata/case_studies.tex"
 
+# Additional investigation of L = 80% of Max (used in evaluation)
+python3 analysis.py chains/case_studies.jsonl --info --relative-bound 0.80 --no-print --output results/case_studies80.jsonl
+
+echo "Evaluation results with L=80% of Max are stored in: results/case_studies80.jsonl"
 
 # Synthetic Evaluation - WATERS
 echo "== Synthetic Evaluation - WATERS Benchmark =="
