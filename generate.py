@@ -5,7 +5,7 @@ import random
 import argparse
 
 def gen_periods_WATERS(number: int):
-    """Generate a task periods with the WATERS distribution."""
+    """Generate task periods with the WATERS distribution."""
 
     periods = [1, 2, 5, 10, 20, 50, 100, 200, 1000]
     period_pdf=[0.03 / 0.85, 0.02 / 0.85, 0.02 / 0.85, 0.25 / 0.85, 0.25 / 0.85, 0.03 / 0.85, 0.2 / 0.85, 0.01 / 0.85, 0.04 / 0.85]
