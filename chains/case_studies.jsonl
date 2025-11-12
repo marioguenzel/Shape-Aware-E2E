@@ -21,7 +21,5 @@
 {"ID": "Frey 2010: Tech. report, Fig. 10 2nd path from top", "tasks": [{"phase": 0, "period": 5, "deadline": 5}, {"phase": 0, "period": 10, "deadline": 10}, {"phase": 0, "period": 10, "deadline": 10}]}
 {"ID": "Frey 2010: Tech. report, Fig. 10 3rd path from top, angleSync with 10ms period", "tasks": [{"phase": 0, "period": 5, "deadline": 5}, {"phase": 0, "period": 10, "deadline": 10}, {"phase": 0, "period": 10, "deadline": 10}, {"phase": 0, "period": 10, "deadline": 10}, {"phase": 0, "period": 10, "deadline": 10}]}
 {"ID": "Frey 2010: Tech. report, Fig. 10 4rd path from top, angleSync with 10ms period", "tasks": [{"phase": 0, "period": 5, "deadline": 5}, {"phase": 0, "period": 10, "deadline": 10}, {"phase": 0, "period": 10, "deadline": 10}, {"phase": 0, "period": 10, "deadline": 10}]}
-{"ID": "Crazyflie Chain 1", "tasks": [{"phase":0, "period":10,  "deadline":10 },{"phase":0, "period":10,  "deadline":10 },{"phase":0, "period":2,  "deadline":2 }]}
-{"ID": "Crazyflie Chain 2", "tasks": [{"phase":0, "period":25,  "deadline":25 },{"phase":0, "period":10,  "deadline":10 },{"phase":0, "period":2,  "deadline":2 }]}
 {"ID": "ROSACE - 1 - h_filter->altitude_hold->Vz_control", "tasks": [{"phase":0, "period":10,  "deadline":10 },{"phase":0, "period":20,  "deadline":20 },{"phase":0, "period":20,  "deadline":20 }]}
 {"ID": "ROSACE - 2 - x_filter->x_control", "tasks": [{"phase":0, "period":10,  "deadline":10 },{"phase":0, "period":20,  "deadline":20 }]}
