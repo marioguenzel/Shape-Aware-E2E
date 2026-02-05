@@ -467,17 +467,44 @@ def guenzel23_equi_mda(chain: CEChain, Fi=None) -> float:
 def guenzel23_equi_mrt(chain: CEChain, Fi=None) -> float:
     return guenzel23_equi_mda(chain, Fi)
 
-# TODO: Approach Suggested by the shepherd
+
 def sun23(chain: CEChain) -> float:
+    """Computs the reactive time."""
     """https://ieeexplore.ieee.org/document/10155700"""
     """Algorithm 3"""
     hyperperiod = ch.hyperperiod()
-    rel_last_job = ch[-1].phase
-    while True:
-        z = rel_last_job
+    theta = dict()
+
+    for idx in itertools.count():
+        rel_last_job = ch[-1].phase + idx * ch[-1].period
+
+        # = Track data backwards
+        z = rel_last_job  # initialize time point
+        no_job = 0  # initialize job number
+        for tsk in ch[-2::-1]:
+            no_job = let_we_leq(z,tsk)
+            if no_job < 0:
+                break
+            z = tsk.phase + tsk.period * no_job # update write-event
         
-        # Track data backwards
-        # TODO: Finish implementation here
+        # incomplete backward job chain
+        if no_job < 0:
+            continue
+        
+        if z <= ch[-1].phase + hyperperiod:
+            if not z in theta:
+                theta[z] = []
+            # store write-event of that pc-chain
+            theta[z].append(rel_last_job + ch[-1].deadline) 
+        else:
+            break
+
+    # compute reactive time from theta
+    rct_list = []
+    for key in theta:
+        rct_list.append(min(theta[key])-key + ch[0].period)
+    
+    return max(rct_list)
 
 
 
@@ -535,6 +562,13 @@ if __name__ == "__main__":
         end_time = time.time()
         this_chain_results['P_MRT'] = res
         this_chain_results['P_TIME'] = end_time - start_time
+
+        # reactive time (based on backward job chains)
+        start_time = time.time()
+        res = sun23(ch)
+        end_time = time.time()
+        this_chain_results['BW_Reac'] = res
+        this_chain_results['BW_TIME'] = end_time - start_time
 
         results.append(this_chain_results)
 
