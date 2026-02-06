@@ -8,6 +8,16 @@ import sys
 import time
 import argparse
 
+import signal
+
+
+class TimeoutError(Exception):
+    pass
+
+def _timeout_handler(signum, frame):
+    raise TimeoutError
+
+
 
 MKRange = (1,10)  # Range of k for (m,k) to be evaluated
 
@@ -218,54 +228,70 @@ def load_chains_from_jsonl(filepath: str) -> list[CEChain]:
 # Analysis
 ##########
 
-def analyze(chain: CEChain, info=False, bound=None, relative_bound=None):
+def analyze(chain: CEChain, info=False, bound=None, relative_bound=None, timeout_sec=None):
 
     assert not (bound and relative_bound), "cannot specify bound and relative bound at the same time"
 
-    # Start timer
-    start_time = time.time()
+    try:
+        if timeout_sec:
+            signal.signal(signal.SIGALRM, _timeout_handler)
+            signal.alarm(timeout_sec)
 
-    results = dict()
-    if chain.anchorsRT is None:
-        chain.calc_anchors()
-    
-    if chain.hyperperiod is None:
-        chain.calc_hyperperiod()
+        # Start timer
+        start_time = time.time()
 
-    # print("Anchors RT: ", chain.anchorsRT)
+        results = dict()
 
-    if info:
-        # Number of anchor points
-        results['#AnchorsRT'] = len(chain.anchorsRT)-1
+        if chain.hyperperiod is None:
+            chain.calc_hyperperiod()
 
-        # hyperperiod/maxperiod
-        results['H/Tp'] = chain.hyperperiod / max([tsk.period for tsk in chain.tasks])
+        if info:
+            # hyperperiod
+            results['H'] = chain.hyperperiod
 
-    # Max RT
-    results['MaxRT'] = maximumRT(chain)
-    # results['MaxRedRT'] = results['MaxRT'] - chain.tasks[0].period
+            # hyperperiod/maxperiod
+            results['H/Tp'] = chain.hyperperiod / max([tsk.period for tsk in chain.tasks])
 
-    # Min RT
-    results['MinRT'] = minimumRT(chain)
+        if chain.anchorsRT is None:
+            chain.calc_anchors()
 
-    # Average
-    results['AvRT'] = averageRT(chain)
+        # print("Anchors RT: ", chain.anchorsRT)
 
-    # Throughput
-    results['throughp'] = throughput(chain)
+        if info:
+            # Number of anchor points
+            results['#AnchorsRT'] = len(chain.anchorsRT)-1
 
-    if relative_bound:
-        bound = relative_bound * results["MaxRT"] 
-        # bound = relative_bound * (results["MaxRT"] - chain.tasks[0].period )
+        # Max RT
+        results['MaxRT'] = maximumRT(chain)
+        # results['MaxRedRT'] = results['MaxRT'] - chain.tasks[0].period
 
-    if bound:
-        results['mkRT'] = mkRT(chain, bound)
+        # Min RT
+        results['MinRT'] = minimumRT(chain)
 
-        results['LE-RT'] = longestExceedanceRT(chain, bound)
+        # Average
+        results['AvRT'] = averageRT(chain)
+
+        # Throughput
+        results['throughp'] = throughput(chain)
+
+        if relative_bound:
+            bound = relative_bound * results["MaxRT"] 
+            # bound = relative_bound * (results["MaxRT"] - chain.tasks[0].period )
+
+        if bound:
+            results['mkRT'] = mkRT(chain, bound)
+
+            results['LE-RT'] = longestExceedanceRT(chain, bound)
 
 
-    end_time = time.time()
-    results['analysis_time_sec'] = end_time - start_time
+        end_time = time.time()
+        results['analysis_time_sec'] = end_time - start_time
+
+        signal.alarm(0)
+
+    except TimeoutError as e:
+        results['analysis_time_sec'] = timeout_sec
+        signal.alarm(0)
 
     return results
 
@@ -445,6 +471,7 @@ def main():
     parser.add_argument("-b", "--bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given bound")
     parser.add_argument("-rb", "--relative-bound", type=float, help="If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * MaxRT)")
     parser.add_argument("-i", "--info", action="store_true", help="Store additional information such as number of anchor points in the results vector.")
+    parser.add_argument("-t", "--timeout", type=int, help="Set a timeout in seconds.")
 
     args = parser.parse_args()
 
@@ -464,7 +491,7 @@ def main():
     for chain in chains:
         res = dict()
         res["ID"] = chain.id
-        res.update(analyze(chain, info=args.info, bound=args.bound, relative_bound=args.relative_bound))
+        res.update(analyze(chain, info=args.info, bound=args.bound, relative_bound=args.relative_bound, timeout_sec=args.timeout))
         results.append(res)
 
         # Print

@@ -2,13 +2,22 @@
 
 import argparse
 import itertools
+import json
+import signal
 import time
-from analysis import Task as OurTask
+from analysis import Task as OurTask, ensure_filepath_exists
 from analysis import CEChain as OurCEChain
 from analysis import load_chains_from_jsonl
 
 import math
 import uuid
+
+
+class TimeoutError(Exception):
+    pass
+
+def _timeout_handler(signum, frame):
+    raise TimeoutError
 
 ### Taken from E2E Evaluation framework ###
 # https://github.com/tu-dortmund-ls12-rt/E2EEvaluation
@@ -514,11 +523,16 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Analyze CEChains from JSONL file.")
     parser.add_argument("input", help="Input file (.jsonl)")
-    parser.add_argument("-o", "--output", help="Output file to save results (optional)")
+    parser.add_argument("output", help="Output file to save results (.jsonl)")
+    parser.add_argument("-t", "--timeout", type=int, help="Set a timeout in seconds.")
+    parser.add_argument("--no-print", action="store_true", help="Do not print results to stdout")
     args = parser.parse_args()
 
     # Load
     chains = load_chains_from_jsonl(args.input)
+
+    # Check output folder
+    ensure_filepath_exists(args.output)
 
     # Translate chains to the object type from the sota
     translated_chains = []
@@ -550,28 +564,58 @@ if __name__ == "__main__":
         this_chain_results["ID"] = ch.id
 
         # Based on forward job chains
-        start_time = time.time()
-        res = LET_per(ch)
-        end_time = time.time()
-        this_chain_results['FW_MRT'] = res
-        this_chain_results['FW_TIME'] = end_time - start_time
+        try:
+            if args.timeout:
+                signal.signal(signal.SIGALRM, _timeout_handler)
+                signal.alarm(args.timeout)
+            start_time = time.time()
+            res = LET_per(ch)
+            end_time = time.time()
+            this_chain_results['FW_MRT'] = res
+            this_chain_results['FW_TIME'] = end_time - start_time
+            signal.alarm(0)
+        except TimeoutError as e:
+            this_chain_results['FW_TIME'] = args.timeout
+            signal.alarm(0)
 
         # Based on partitioned job chains
-        start_time = time.time()
-        res = guenzel23_equi_mrt(ch)
-        end_time = time.time()
-        this_chain_results['P_MRT'] = res
-        this_chain_results['P_TIME'] = end_time - start_time
+        try:
+            if args.timeout:
+                signal.signal(signal.SIGALRM, _timeout_handler)
+                signal.alarm(args.timeout)
+            start_time = time.time()
+            res = guenzel23_equi_mrt(ch)
+            end_time = time.time()
+            this_chain_results['P_MRT'] = res
+            this_chain_results['P_TIME'] = end_time - start_time
+            signal.alarm(0)
+        except TimeoutError as e:
+            print(start_time, time.time())
+            this_chain_results['P_TIME'] = args.timeout
+            signal.alarm(0)
 
         # reactive time (based on backward job chains)
-        start_time = time.time()
-        res = sun23(ch)
-        end_time = time.time()
-        this_chain_results['BW_Reac'] = res
-        this_chain_results['BW_TIME'] = end_time - start_time
+        try:
+            if args.timeout:
+                signal.signal(signal.SIGALRM, _timeout_handler)
+                signal.alarm(args.timeout)
+            start_time = time.time()
+            res = sun23(ch)
+            end_time = time.time()
+            this_chain_results['BW_Reac'] = res
+            this_chain_results['BW_TIME'] = end_time - start_time
+            signal.alarm(0)
+        except TimeoutError as e:
+            this_chain_results['BW_TIME'] = args.timeout
+            signal.alarm(0)
 
         results.append(this_chain_results)
 
+        if not args.no_print:
+            print(json.dumps(this_chain_results))
 
-    breakpoint()
+    # Store
+    with open(args.output, "w") as f:
+        for r in results:
+            f.write(json.dumps(r) + "\n")
 

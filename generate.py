@@ -34,7 +34,7 @@ def gen_periods_uniform(number: int, periods: list):
     """Draw periods uniformly from a given set of periods."""
     return random.choices(periods, k=number)
 
-def generateUniform(number_tasks, number_chains, filename, startid=0, maxHTp=None):
+def generateUniform(number_tasks, number_chains, filename, startid=0, maxHTp=None, maxH=None):
     """Generate cause-effect chains with uniform periods, random phase and implicit deadlines.
     Current period range: 10, 20, 30, ..., 200
     """
@@ -43,8 +43,9 @@ def generateUniform(number_tasks, number_chains, filename, startid=0, maxHTp=Non
     for idx in range(number_chains):
         while True:
             periods = gen_periods_uniform(number_tasks, periods_list)
-            if maxHTp is None or math.lcm(*periods)/max(*periods) <= maxHTp:
-                break
+            if maxH is None or math.lcm(*periods) <= maxH:
+                if maxHTp is None or math.lcm(*periods)/max(*periods) <= maxHTp:
+                    break
         chains.append(CEChain(*[Task(random.randint(0,per), per, per) for per in periods], id=startid+idx))
     save_chains_as_jsonl(chains, filename)
     
@@ -59,7 +60,8 @@ if __name__ == "__main__":
     parser.add_argument("--tasks", type=int, default=5, help="Number of tasks per chain (default: 5)")
     parser.add_argument("--sets", type=int, default=10, help="Number of chains to generate (default:10)")
     parser.add_argument("--startid", type=int, default=0, help="ID of the first chain.")
-    parser.add_argument("--maxHTp", type=int, default=None, help="Maximal allowed value of Hyperperiod / maximal period.")
+    parser.add_argument("--maxH", type=int, default=None, help="Maximal allowed value of Hyperperiod. (For generator UNIFORM only.)")
+    parser.add_argument("--maxHTp", type=int, default=None, help="Maximal allowed value of Hyperperiod / maximal period. (For generator UNIFORM only.)")
     parser.add_argument("filename", type=str, help="Output filename (e.g., 'chains/tests.jsonl')")
 
     args = parser.parse_args()
@@ -67,4 +69,4 @@ if __name__ == "__main__":
     if args.bench == "WATERS":
         generateSynchronousImplicitWATERS(args.tasks, args.sets, args.filename, startid=args.startid)
     elif args.bench == "UNI":
-        generateUniform(args.tasks, args.sets, args.filename, startid=args.startid,maxHTp=args.maxHTp)
+        generateUniform(args.tasks, args.sets, args.filename, startid=args.startid,maxHTp=args.maxHTp, maxH=args.maxH)
