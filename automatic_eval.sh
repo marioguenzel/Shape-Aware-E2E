@@ -44,7 +44,13 @@ python3 -c "import json; total = sum(json.loads(line).get('BW_TIME', 0) for line
 python3 -c "import json; total = sum(json.loads(line).get('FW_TIME', 0) for line in open('results/case_studies_other.jsonl')); print(f'- SUM FW_TIME: {total}')"
 python3 -c "import json; total = sum(json.loads(line).get('P_TIME', 0) for line in open('results/case_studies_other.jsonl')); print(f'- SUM P_TIME: {total}')"
 
-# ===== TODO: Check if results match =====
+# Check that results match
+echo "= Check that results match"
+python3 -c "import json; results_our = [json.loads(line).get('MaxRT') for line in open('results/case_studies.jsonl')]; results_other = [json.loads(line).get('FW_MRT') for line in open('results/case_studies_other.jsonl')]; print(f'- FW differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
+python3 -c "import json; results_our = [json.loads(line).get('MaxRT') for line in open('results/case_studies.jsonl')]; results_other = [json.loads(line).get('P_MRT') for line in open('results/case_studies_other.jsonl')]; print(f'- Partitioned differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
+python3 -c "import json; results_our = [json.loads(line).get('Reac') for line in open('results/case_studies.jsonl')]; results_other = [json.loads(line).get('BW_Reac') for line in open('results/case_studies_other.jsonl')]; print(f'- BW differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
 
 
 # == Section B: Runtime Comparison ==
@@ -77,6 +83,14 @@ eval python plot_runtimecomparison.py -o RuntimeComparison/WATERS/plot20.png -i 
 eval python plot_runtimecomparison.py -o RuntimeComparison/WATERS/plot50.png -i FW FW_TIME RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i P P_TIME RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec RuntimeComparison/WATERS/Our_results50_{0..$REPEATING_RUNS}.jsonl
 echo "Plots stored in RuntimeComparison/WATERS"
 
+# Check that results match
+echo "-> Check that results match"
+python3 -c "import json; results_our = [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/WATERS/Our_results05_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/WATERS/Our_results20_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/WATERS/Our_results50_0.jsonl')]; results_other = [json.loads(line).get('FW_MRT') for line in open('RuntimeComparison/WATERS/Other_results05_0.jsonl')] + [json.loads(line).get('FW_MRT') for line in open('RuntimeComparison/WATERS/Other_results20_0.jsonl')] + [json.loads(line).get('FW_MRT') for line in open('RuntimeComparison/WATERS/Other_results50_0.jsonl')]; print(f'- FW differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
+python3 -c "import json; results_our = [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/WATERS/Our_results05_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/WATERS/Our_results20_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/WATERS/Our_results50_0.jsonl')]; results_other = [json.loads(line).get('P_MRT') for line in open('RuntimeComparison/WATERS/Other_results05_0.jsonl')] + [json.loads(line).get('P_MRT') for line in open('RuntimeComparison/WATERS/Other_results20_0.jsonl')] + [json.loads(line).get('P_MRT') for line in open('RuntimeComparison/WATERS/Other_results50_0.jsonl')]; print(f'- Partitioned differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
+python3 -c "import json; results_our = [json.loads(line).get('Reac') for line in open('RuntimeComparison/WATERS/Our_results05_0.jsonl')] + [json.loads(line).get('Reac') for line in open('RuntimeComparison/WATERS/Our_results20_0.jsonl')] + [json.loads(line).get('Reac') for line in open('RuntimeComparison/WATERS/Our_results50_0.jsonl')]; results_other = [json.loads(line).get('BW_Reac') for line in open('RuntimeComparison/WATERS/Other_results05_0.jsonl')] + [json.loads(line).get('BW_Reac') for line in open('RuntimeComparison/WATERS/Other_results20_0.jsonl')] + [json.loads(line).get('BW_Reac') for line in open('RuntimeComparison/WATERS/Other_results50_0.jsonl')]; print(f'- BW differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
 
 # = Part 2: UNIFORM Benchmark
 echo "= UNIFORM Benchmark"
@@ -104,6 +118,16 @@ eval python plot_runtimecomparison.py -o RuntimeComparison/UNI/plot20.png -i FW 
 
 eval python plot_runtimecomparison.py -o RuntimeComparison/UNI/plot50.png -i FW FW_TIME RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i P P_TIME RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec RuntimeComparison/UNI/Our_results50_{0..$REPEATING_RUNS}.jsonl
 echo "Plots stored in RuntimeComparison/UNI"
+
+
+# Check that results match
+echo "-> Check that results match"
+python3 -c "import json; results_our = [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/UNI/Our_results05_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/UNI/Our_results20_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/UNI/Our_results50_0.jsonl')]; results_other = [json.loads(line).get('FW_MRT') for line in open('RuntimeComparison/UNI/Other_results05_0.jsonl')] + [json.loads(line).get('FW_MRT') for line in open('RuntimeComparison/UNI/Other_results20_0.jsonl')] + [json.loads(line).get('FW_MRT') for line in open('RuntimeComparison/UNI/Other_results50_0.jsonl')]; print(f'- FW differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
+python3 -c "import json; results_our = [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/UNI/Our_results05_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/UNI/Our_results20_0.jsonl')] + [json.loads(line).get('MaxRT') for line in open('RuntimeComparison/UNI/Our_results50_0.jsonl')]; results_other = [json.loads(line).get('P_MRT') for line in open('RuntimeComparison/UNI/Other_results05_0.jsonl')] + [json.loads(line).get('P_MRT') for line in open('RuntimeComparison/UNI/Other_results20_0.jsonl')] + [json.loads(line).get('P_MRT') for line in open('RuntimeComparison/UNI/Other_results50_0.jsonl')]; print(f'- Partitioned differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
+python3 -c "import json; results_our = [json.loads(line).get('Reac') for line in open('RuntimeComparison/UNI/Our_results05_0.jsonl')] + [json.loads(line).get('Reac') for line in open('RuntimeComparison/UNI/Our_results20_0.jsonl')] + [json.loads(line).get('Reac') for line in open('RuntimeComparison/UNI/Our_results50_0.jsonl')]; results_other = [json.loads(line).get('BW_Reac') for line in open('RuntimeComparison/UNI/Other_results05_0.jsonl')] + [json.loads(line).get('BW_Reac') for line in open('RuntimeComparison/UNI/Other_results20_0.jsonl')] + [json.loads(line).get('BW_Reac') for line in open('RuntimeComparison/UNI/Other_results50_0.jsonl')]; print(f'- BW differs in {sum([res1 != res2 for res1, res2 in zip(results_our, results_other)])} cases')"
+
 
 
 # == Section C: Controlling number of Anchor Points ==

@@ -263,7 +263,9 @@ def analyze(chain: CEChain, info=False, bound=None, relative_bound=None, timeout
 
         # Max RT
         results['MaxRT'] = maximumRT(chain)
-        # results['MaxRedRT'] = results['MaxRT'] - chain.tasks[0].period
+        results['MaxRedRT'] = results['MaxRT'] - chain.tasks[0].period
+
+        results['Reac'] = reactive(chain)
 
         # Min RT
         results['MinRT'] = minimumRT(chain)
@@ -318,6 +320,26 @@ def minimumRT(chain: CEChain):
         else:
             minRT = min(minRT, rt)
     return minRT
+
+def reactive(chain: CEChain):
+    '''Minimum Reaction Time (MinRT)'''
+    if chain.anchorsRT is None:
+        chain.calc_anchors()
+    
+    reac = None
+    for idx in range(len(chain.anchorsRT) - 1):
+        currentX, currentY = chain.anchorsRT[idx]
+        nextX, nextY = chain.anchorsRT[idx+1]
+
+        rt = currentY - (nextX - currentX)
+
+        if reac == None:
+            reac = rt
+        else:
+            reac = max(reac, rt)
+
+    reac += chain.tasks[0].period
+    return reac
 
 def averageRT(chain: CEChain):
     '''Average Reaction Time (AvRT)'''
