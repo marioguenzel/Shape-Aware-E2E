@@ -1,5 +1,5 @@
-NUM_ITERATIONS=5  # number of runs for the time measurements of the synthetic evaluation
-TASKSETS_PER_CONFIG=10 # number of tasksets per configuration for the runtime evaluation (Change to: 1000)
+NUM_ITERATIONS=50  # number of runs for the time measurements of the synthetic evaluation
+TASKSETS_PER_CONFIG=1000 # number of tasksets per configuration for the runtime evaluation (Change to: 1000)
 PARALLELIZE=true
 
 if [ "$1" = "0" ]; then
