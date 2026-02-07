@@ -6,8 +6,10 @@ import statistics
 from typing import List
 import matplotlib.pyplot as plt
 from matplotlib.ticker import AutoMinorLocator
+from matplotlib.cbook import boxplot_stats
 
-plt.rcParams.update({'font.size': 18})
+
+plt.rcParams.update({'font.size': 25})
 
 COLORS = ['#0173B2', '#DE8F05', '#D55E00', '#CA9161', '#56B4E9', '#F0E442', '#009E73', '#CC78BC']
 
@@ -36,17 +38,18 @@ def plot(data: List[List[float]], xticks=None, output=None, title='', yticks=Non
 
     plt.yscale(yscale)
 
-    ax.tick_params(axis='x', rotation=0, labelsize=20)
-    ax.tick_params(axis='y', rotation=0, labelsize=20)
+    ax.tick_params(axis='x', rotation=0, labelsize=25)
+    ax.tick_params(axis='y', rotation=0, labelsize=25)
 
-    ax.set_ylabel(yaxis_label, fontsize=20)
+    ax.set_ylabel(yaxis_label, fontsize=25)
 
     plt.grid(True, color='lightgray', which='both', axis='y', linestyle='-')
     ax.yaxis.set_minor_locator(AutoMinorLocator())
     ax.tick_params(which='both', width=2)
     ax.tick_params(which='major', length=7)
 
-    plt.tight_layout()  # improve margins for example for yaxis_label
+    plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    plt.tight_layout(pad=0.5)  # improve margins for example for yaxis_label
 
     if output:
         fig.savefig(output)
@@ -61,6 +64,7 @@ def main():
     parser.add_argument('-i','--input',action='append',nargs='+',
     metavar=('ARG'),help='(Arguments: Methodname runtime-keyword resultfile [resultfile ...]) First argument needs to be the method name to be specified (later shown as boxplotlabel). Second argument is the keyword used in the result files to specify the corresponding runtime. Third (and following) arguments are the input files as .jsonl. If multiple result files are given, then the median runtime is displayed. Example: -i OurMethod OurRuntimeKeyword results1.jsonl results2.jsonl')
     parser.add_argument("-o", "--output", help="Output file to save boxplot.", nargs=1, metavar=('outputfile.png'))
+    parser.add_argument("--stat", help="Store statistics of the boxplot in the given file.", metavar=('outputfile.json'))
 
     args = parser.parse_args()
 
@@ -99,7 +103,21 @@ def main():
     
     # == Plot data ==
     out = args.output[0] if args.output else None
-    plot(data, xticks=names, output=out)
+    plot(data, xticks=names, output=out, yaxis_label='Runtime [s]')
+
+    # == Store data ==
+    if args.stat:
+        stats = boxplot_stats(data, whis=[0, 100],labels=names)
+        for s in stats:
+            s.pop("fliers", None)
+            s.pop("iqr", None)
+            s.pop("cilo", None)
+            s.pop("cihi", None)
+            s.pop("mean", None)
+        with open(args.stat, "w") as f:
+            json.dump(stats, f)
+        
+
     
 
 if __name__ == '__main__':

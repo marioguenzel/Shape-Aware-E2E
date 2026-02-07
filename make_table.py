@@ -1,3 +1,4 @@
+import argparse
 import json
 
 # === Configuration for mapping IDs to LaTeX short names and citations ===
@@ -36,9 +37,13 @@ ID_MAP = {
     "ROSACE - 2 - x_filter->x_control": ("Pag14-C2", "Pagetti:RTAS14"),
 }
 
+parser = argparse.ArgumentParser(description="Create the table shown in the paper.")
+parser.add_argument("input", help="Input file: results from the case studies as '.jsonl'")
+args = parser.parse_args()
+
 # === Load precomputed results from results/case_studies.jsonl ===
 results = {}
-with open("results/case_studies.jsonl", "r") as rf:
+with open(args.input, "r") as rf:
     for line in rf:
         entry = json.loads(line)
         results[entry["ID"]] = entry
