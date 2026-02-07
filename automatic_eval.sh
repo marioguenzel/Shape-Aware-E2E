@@ -92,11 +92,11 @@ done
 wait
 echo "Runtime results stored in AutomaticEval/RuntimeComparison/WATERS"
 
-eval python plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_waters_05.png --stat AutomaticEval/paperdata/runtime_comparison_waters_05.json -i FW FW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/WATERS/Our_results05_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_waters_05.png --stat AutomaticEval/paperdata/runtime_comparison_waters_05.json -i FW FW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/WATERS/Our_results05_{0..$REPEATING_RUNS}.jsonl
 
-eval python plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_waters_20.png --stat AutomaticEval/paperdata/runtime_comparison_waters_20.json -i FW FW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results20_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results20_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results20_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/WATERS/Our_results20_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_waters_20.png --stat AutomaticEval/paperdata/runtime_comparison_waters_20.json -i FW FW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results20_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results20_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results20_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/WATERS/Our_results20_{0..$REPEATING_RUNS}.jsonl
 
-eval python plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_waters_50.png --stat AutomaticEval/paperdata/runtime_comparison_waters_50.json -i FW FW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/WATERS/Our_results50_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_waters_50.png --stat AutomaticEval/paperdata/runtime_comparison_waters_50.json -i FW FW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/WATERS/Other_results50_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/WATERS/Our_results50_{0..$REPEATING_RUNS}.jsonl
 echo "Plots stored in AutomaticEval/RuntimeComparison/WATERS"
 
 # Check that results match
@@ -134,11 +134,11 @@ wait
 
 echo "Runtime results stored in AutomaticEval/RuntimeComparison/UNI"
 
-eval python plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_uni_05.png --stat AutomaticEval/paperdata/runtime_comparison_uni_05.json -i FW FW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results05_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results05_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/UNI/Other_results05_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/UNI/Our_results05_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_uni_05.png --stat AutomaticEval/paperdata/runtime_comparison_uni_05.json -i FW FW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results05_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results05_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/UNI/Other_results05_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/UNI/Our_results05_{0..$REPEATING_RUNS}.jsonl
 
-eval python plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_uni_20.png --stat AutomaticEval/paperdata/runtime_comparison_uni_20.json -i FW FW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results20_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results20_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/UNI/Other_results20_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/UNI/Our_results20_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_uni_20.png --stat AutomaticEval/paperdata/runtime_comparison_uni_20.json -i FW FW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results20_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results20_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/UNI/Other_results20_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/UNI/Our_results20_{0..$REPEATING_RUNS}.jsonl
 
-eval python plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_uni_50.png --stat AutomaticEval/paperdata/runtime_comparison_uni_50.json -i FW FW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/UNI/Our_results50_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot_runtimecomparison.py -o AutomaticEval/paperdata/runtime_comparison_uni_50.png --stat AutomaticEval/paperdata/runtime_comparison_uni_50.json -i FW FW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME AutomaticEval/RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i P P_TIME AutomaticEval/RuntimeComparison/UNI/Other_results50_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec AutomaticEval/RuntimeComparison/UNI/Our_results50_{0..$REPEATING_RUNS}.jsonl
 echo "Plots stored in AutomaticEval/RuntimeComparison/UNI"
 
 
@@ -199,7 +199,7 @@ wait
 
 echo "Analysis stored in AutomaticEval/Relation/WATERS/results<tasks-per-set>.jsonl"
 
-eval python plot.py -o AutomaticEval/paperdata/WATERS_runtime.png AutomaticEval/paperdata/WATERS_anchors.png -c $NUM_ITERATIONS AutomaticEval/Relation/WATERS/results50_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/WATERS/results20_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/WATERS/results05_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot.py -o AutomaticEval/paperdata/WATERS_runtime.png AutomaticEval/paperdata/WATERS_anchors.png -c $NUM_ITERATIONS AutomaticEval/Relation/WATERS/results50_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/WATERS/results20_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/WATERS/results05_{0..$REPEATING_RUNS}.jsonl
 
 echo "Plots stored in AutomaticEval/paperdata/"
 
@@ -251,7 +251,7 @@ wait
 
 echo "Analysis stored in AutomaticEval/Relation/UNI/results<tasks-per-set>.jsonl"
 
-eval python plot.py -o AutomaticEval/paperdata/UNI_runtime.png AutomaticEval/paperdata/UNI_anchors.png -c $NUM_ITERATIONS AutomaticEval/Relation/UNI/results50_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/UNI/results20_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/UNI/results05_{0..$REPEATING_RUNS}.jsonl
+eval python3 plot.py -o AutomaticEval/paperdata/UNI_runtime.png AutomaticEval/paperdata/UNI_anchors.png -c $NUM_ITERATIONS AutomaticEval/Relation/UNI/results50_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/UNI/results20_{0..$REPEATING_RUNS}.jsonl  AutomaticEval/Relation/UNI/results05_{0..$REPEATING_RUNS}.jsonl
 
 echo "Plots stored in AutomaticEval/paperdata/"
 
