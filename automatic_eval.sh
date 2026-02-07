@@ -1,7 +1,16 @@
-NUM_ITERATIONS=2  # number of runs for the time measurements of the synthetic evaluation
-REPEATING_RUNS=$((NUM_ITERATIONS - 1))
-TASKSETS_PER_CONFIG=100 # number of tasksets per configuration for the runtime evaluation (Change to: 1000)
+NUM_ITERATIONS=5  # number of runs for the time measurements of the synthetic evaluation
+TASKSETS_PER_CONFIG=10 # number of tasksets per configuration for the runtime evaluation (Change to: 1000)
+PARALLELIZE=true
 
+if [ "$1" = "0" ]; then
+    echo "Input is zero"
+    NUM_ITERATIONS=2
+    TASKSETS_PER_CONFIG=10
+    PARALLELIZE=false
+fi
+
+# Set help variables
+REPEATING_RUNS=$((NUM_ITERATIONS - 1))
 
 # == Section A: Evaluation of Benchmarks ==
 echo "== Evaluate Benchmarks =="
@@ -66,6 +75,7 @@ python3 generate.py --bench WATERS --tasks 50 --sets $TASKSETS_PER_CONFIG Runtim
 echo "Chains stored in RuntimeComparison/WATERS/chains<tasks-per-set>.jsonl"
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py RuntimeComparison/WATERS/chains05.jsonl --info --relative-bound 0.95 --no-print --output RuntimeComparison/WATERS/Our_results05_${i}.jsonl
     python3 analysis.py RuntimeComparison/WATERS/chains20.jsonl --info --relative-bound 0.95 --no-print --output RuntimeComparison/WATERS/Our_results20_${i}.jsonl
     python3 analysis.py RuntimeComparison/WATERS/chains50.jsonl --info --relative-bound 0.95 --no-print --output RuntimeComparison/WATERS/Our_results50_${i}.jsonl
@@ -73,7 +83,12 @@ for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
     python3 compare_methods.py RuntimeComparison/WATERS/chains05.jsonl RuntimeComparison/WATERS/Other_results05_${i}.jsonl --no-print
     python3 compare_methods.py RuntimeComparison/WATERS/chains20.jsonl RuntimeComparison/WATERS/Other_results20_${i}.jsonl --no-print
     python3 compare_methods.py RuntimeComparison/WATERS/chains50.jsonl RuntimeComparison/WATERS/Other_results50_${i}.jsonl --no-print
+) &
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 echo "Runtime results stored in RuntimeComparison/WATERS"
 
 eval python plot_runtimecomparison.py -o RuntimeComparison/WATERS/plot05.png -i FW FW_TIME RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i BW BW_TIME RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i P P_TIME RuntimeComparison/WATERS/Other_results05_{0..$REPEATING_RUNS}.jsonl -i Our analysis_time_sec RuntimeComparison/WATERS/Our_results05_{0..$REPEATING_RUNS}.jsonl
@@ -101,6 +116,7 @@ python3 generate.py --bench UNI --tasks 50 --sets $TASKSETS_PER_CONFIG RuntimeCo
 echo "Chains stored in RuntimeComparison/UNI/chains<tasks-per-set>.jsonl"
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py RuntimeComparison/UNI/chains05.jsonl --info --relative-bound 0.95 --no-print --output RuntimeComparison/UNI/Our_results05_${i}.jsonl
     python3 analysis.py RuntimeComparison/UNI/chains20.jsonl --info --relative-bound 0.95 --no-print --output RuntimeComparison/UNI/Our_results20_${i}.jsonl
     python3 analysis.py RuntimeComparison/UNI/chains50.jsonl --info --relative-bound 0.95 --no-print --output RuntimeComparison/UNI/Our_results50_${i}.jsonl
@@ -108,7 +124,12 @@ for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
     python3 compare_methods.py RuntimeComparison/UNI/chains05.jsonl RuntimeComparison/UNI/Other_results05_${i}.jsonl --no-print
     python3 compare_methods.py RuntimeComparison/UNI/chains20.jsonl RuntimeComparison/UNI/Other_results20_${i}.jsonl --no-print
     python3 compare_methods.py RuntimeComparison/UNI/chains50.jsonl RuntimeComparison/UNI/Other_results50_${i}.jsonl --no-print
+) & 
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 
 echo "Runtime results stored in RuntimeComparison/UNI"
 
@@ -146,16 +167,34 @@ python3 generate.py --bench WATERS --tasks 50 --sets $TASKSETS_PER_CONFIG --star
 echo "Chains stored in Relation/WATERS/chains<tasks-per-set>.jsonl"
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py Relation/WATERS/chains05.jsonl --info --relative-bound 0.95 --no-print --output Relation/WATERS/results05_${i}.jsonl
+) &
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py Relation/WATERS/chains20.jsonl --info --relative-bound 0.95 --no-print --output Relation/WATERS/results20_${i}.jsonl
+) &
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py Relation/WATERS/chains50.jsonl --info --relative-bound 0.95 --no-print --output Relation/WATERS/results50_${i}.jsonl
+) &
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 
 echo "Analysis stored in Relation/WATERS/results<tasks-per-set>.jsonl"
 
@@ -172,24 +211,42 @@ echo "- Total elapsed time for synthetic evaluation with WATERS benchmark: ${ela
 echo "= UNIFORM Benchmark"
 start_time=$(date +%s.%N)
 
-python3 generate.py --bench UNI --tasks 5 --sets 1000 --startid 0 Relation/UNI/chains05.jsonl --maxHTp 350 --maxH 1000000
-python3 generate.py --bench UNI --tasks 20 --sets 1000 --startid 10000 Relation/UNI/chains20.jsonl --maxHTp 350 --maxH 1000000
-python3 generate.py --bench UNI --tasks 50 --sets 1000 --startid 20000 Relation/UNI/chains50.jsonl --maxHTp 350 --maxH 1000000
+python3 generate.py --bench UNI --tasks 5 --sets $TASKSETS_PER_CONFIG --startid 0 Relation/UNI/chains05.jsonl --maxHTp 350 --maxH 1000000
+python3 generate.py --bench UNI --tasks 20 --sets $TASKSETS_PER_CONFIG --startid 10000 Relation/UNI/chains20.jsonl --maxHTp 350 --maxH 1000000
+python3 generate.py --bench UNI --tasks 50 --sets $TASKSETS_PER_CONFIG --startid 20000 Relation/UNI/chains50.jsonl --maxHTp 350 --maxH 1000000
 
 echo "Chains stored in Relation/UNI/chains<tasks-per-set>.jsonl"
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py Relation/UNI/chains05.jsonl --info --relative-bound 0.95 --no-print --output Relation/UNI/results05_${i}.jsonl
+) &
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py Relation/UNI/chains20.jsonl --info --relative-bound 0.95 --no-print --output Relation/UNI/results20_${i}.jsonl
+) &
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 
 
 for i in $(seq 0 $((NUM_ITERATIONS - 1))); do
+(
     python3 analysis.py Relation/UNI/chains50.jsonl --info --relative-bound 0.95 --no-print --output Relation/UNI/results50_${i}.jsonl
+) &
+    if [ $PARALLELIZE = false ]; then
+        wait
+    fi
 done
+wait
 
 echo "Analysis stored in Relation/UNI/results<tasks-per-set>.jsonl"
 
