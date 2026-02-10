@@ -44,11 +44,11 @@ def plot(data: List[List[float]], xticks=None, output=None, title='', yticks=Non
     ax.set_ylabel(yaxis_label, fontsize=25)
 
     plt.grid(True, color='lightgray', which='both', axis='y', linestyle='-')
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
+    # ax.yaxis.set_minor_locator(AutoMinorLocator())
     ax.tick_params(which='both', width=2)
     ax.tick_params(which='major', length=7)
 
-    plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
+    # plt.ticklabel_format(axis='y', style='sci', scilimits=(0, 0))
     plt.tight_layout(pad=0.5)  # improve margins for example for yaxis_label
 
     if output:
@@ -103,7 +103,7 @@ def main():
     
     # == Plot data ==
     out = args.output[0] if args.output else None
-    plot(data, xticks=names, output=out, yaxis_label='Runtime [s]')
+    plot(data, xticks=names, output=out, yaxis_label='Runtime [s]', yscale='log')
 
     # == Store data ==
     if args.stat:
