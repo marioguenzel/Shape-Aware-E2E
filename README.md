@@ -2,7 +2,7 @@
 
 Shape-Aware Analysis of End-to-End Latency under Logical Execution Time (LET) paradigm.
 
-This repository is used to evaluate the paper "Shape-Aware Analysis of End-to-End Latency Under LET" published at RTAS 2026.
+This repository has been used to evaluate the paper "Shape-Aware Analysis of End-to-End Latency Under LET" published at RTAS 2026.
 
 ```
 @inproceedings{2026/RTAS/GuenzelBC,
@@ -15,6 +15,7 @@ This repository is used to evaluate the paper "Shape-Aware Analysis of End-to-En
 ```
 
 To reproduce the evaluation results of the paper, first follow the section [Installation](#installation) and then use the automatic evaluation script as described in section [Reproducing Evaluation Results](#reproducing-evaluation-results).
+The artifact has been developed for MacOS and Linux.
 
 The general usage of this repository (e.g., to analyze own cause-effect chains) is described in the section [General Usage](#general-usage).
 
@@ -79,7 +80,7 @@ The virtual environment can be activated using
 ```
 source venv/bin/activate
 ```
-If you use ```which python3.12``` it should now show you the path of python in the virtual environment.
+If you use ```which python3``` it should now show you the path of python in the virtual environment.
 
 **Note:**<br>
 The virtual environment has to be entered using ```source venv/bin/activate``` every time a new terminal window is started and the shape-aware analysis framework is to be used. 
@@ -220,7 +221,7 @@ To control the runtime of the experiments, the parameters `--maxH` or `--maxHTp`
 **Example:**<br>
 To generate $20$ cause-effect chains with UNI benchmark and store them in ```tutorial/cause_effect.jsonl```, use the following command:
 ```
-python3.12 generate.py --bench UNI --sets 20 tutorial/cause_effect.jsonl
+python3 generate.py --bench UNI --sets 20 tutorial/cause_effect.jsonl
 ```
 
 ### Analyzing Cause-Effect Chains
@@ -259,13 +260,13 @@ A timeout for the analysis (in seconds) can be set using `--timeout`.
 **Example:**<br>
 The case studies stored in `chains/case_studies.jsonl` can be evaluated using:
 ```
-python3.12 analysis.py chains/case_studies.jsonl
+python3 analysis.py chains/case_studies.jsonl
 ```
 We can see the different metrics and analysis time printed to the console.
 Furthermore, if the file `tutorial/cause_effect.jsonl` has been created in the previous step, we can prepare the results for the plotting in the subsequent step. 
 For that, we need to add additional information, calculate the soft metrics and store the outputs:
 ```
-python3.12 analysis.py --info --relative-bound 1.0 --output tutorial/results.jsonl tutorial/cause_effect.jsonl
+python3 analysis.py --info --relative-bound 1.0 --output tutorial/results.jsonl tutorial/cause_effect.jsonl
 ```
 We can see that a new file `tutorial/results.jsonl` has been created storing the analysis results.
 
@@ -277,7 +278,7 @@ In general, using the `-h` option shows an instruction how to utilize the corres
 Furthermore, a peak into the `automatic_eval.sh`-file can demonstrate how components can be utilized correctly. 
 
 - `plot.py`: The script takes multiple input files (in case multiple runtime measurements have been done), and plots the median result. It generates two output files, specified by the `--outputs` parameter, to show the relation between anchor points and runtime. With the results `tutorial/results.jsonl` exemplary generated in the previous steps, we can create plots using:
-`python3.12 plot.py -o tutorial/plot1.png tutorial/plot2.png tutorial/results.jsonl`
+`python3 plot.py -o tutorial/plot1.png tutorial/plot2.png tutorial/results.jsonl`
 This generates two plots `tutorial/plot1.png` `tutorial/plot2.png` similar to those displayed in the paper. 
 - `compare_methods.py`: Analyzes cause-effect chains using literature results. Input and output file have to be specified, and a timeout can optionally be set using the `--timeout` parameter.
 - `plot_runtimecomparison.py`: Plots a runtime comparison similar to the plots presented in the paper. It allows specifying multiple inputs using `-i <method-name> <keyword-in-inputfile> <inputfile1>.jsonl [<inputfile2>.jsonl ...]`. Inside the inputfiles, the runtime is stored under the keyword `<keyword-in-inputfile>`. When multiple inputfiles are specified, the median runtime among all inputfiles is taken. Multiple methods can be specified by using the `-i` parameter multiple times.
