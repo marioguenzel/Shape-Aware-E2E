@@ -19,6 +19,26 @@ The artifact has been developed for MacOS and Linux.
 
 The general usage of this repository (e.g., to analyze own cause-effect chains) is described in the section [General Usage](#general-usage).
 
+## Table of Contents
+- [Shape-Aware-E2E](#shape-aware-e2e)
+  - [Table of Contents](#table-of-contents)
+  - [About](#about)
+  - [Installation](#installation)
+    - [Step 1: Cloning the repository](#step-1-cloning-the-repository)
+    - [Step 2: Create a Virtual Environment](#step-2-create-a-virtual-environment)
+    - [Step 3: Install Requirements](#step-3-install-requirements)
+  - [Reproducing Evaluation Results](#reproducing-evaluation-results)
+    - [Step 1: Make sure the installation was successful](#step-1-make-sure-the-installation-was-successful)
+    - [Step 2: Start the virtual environment](#step-2-start-the-virtual-environment)
+    - [Step 3: Run the automatic evaluation script](#step-3-run-the-automatic-evaluation-script)
+  - [General Usage](#general-usage)
+    - [Quick Guide](#quick-guide)
+    - [Generating Cause-Effect Chains](#generating-cause-effect-chains)
+    - [Analyzing Cause-Effect Chains](#analyzing-cause-effect-chains)
+    - [Further Components](#further-components)
+    - [Metrics](#metrics)
+    - [Use Cases](#use-cases)
+
 
 
 ## About
