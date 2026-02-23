@@ -372,7 +372,7 @@ def throughput(chain: CEChain):
     return (len(chain.anchorsRT) -1) / chain.hyperperiod
 
 def mkRT(chain: CEChain, bound):
-    """Weakly hard chain-level (m,k) constrains for Reaction time. 
+    """Weakly hard chain-level (m,k) constraints for Reaction time. 
     Returns the (m,k) constraints with the smallest m which are satisfied for bound with k specified in MKRange."""
     if chain.anchorsRT is None:
         chain.calc_anchors()

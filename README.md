@@ -224,18 +224,8 @@ python3.12 generate.py --bench UNI --sets 20 tutorial/cause_effect.jsonl
 
 Given that (one or multiple) cause-effect chains are stored in a `.jsonl` file, `analysis.py` can be utilized to analyze them using the shape-aware analysis framework.
 The analysis for a file `<my-chains>.jsonl` can be started using `python3 analysis.py <my-chains>.jsonl`:
-
-
-
-
-
-
-
-
-
-
 ```
-usage: analysis.py [-h] [-o OUTPUT] [--no-print] [-b BOUND] [-rb RELATIVE_BOUND] [-i] input
+usage: analysis.py [-h] [-o OUTPUT] [--no-print] [-b BOUND] [-rb RELATIVE_BOUND] [-i] [-t TIMEOUT] input
 
 Analyze CEChains from JSONL file.
 
@@ -250,81 +240,63 @@ options:
   -b BOUND, --bound BOUND
                         If set, perform (m,k) and longest exceedance analysis with the given bound
   -rb RELATIVE_BOUND, --relative-bound RELATIVE_BOUND
-                        If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * AvRT)
+                        If set, perform (m,k) and longest exceedance analysis with the given relative bound (relative_bound * MaxRT)
   -i, --info            Store additional information such as number of anchor points in the results vector.
+  -t TIMEOUT, --timeout TIMEOUT
+                        Set a timeout in seconds.
 ```
 
 The analysis takes an input file, determines the metrics described in the section on [Metrics](#metrics) and prints them to the console. 
-Optionally, the results can also be stored to an output file specified with the ```--output``` parameter.
-There are options ```--no-print``` to avoid the console out put (especially useful for large datasets) and ```--info``` to store additional information, which are useful for generating the plots in the next step. 
-Furthermore, to soft real-time guarantees such as (m,k) and longest exceedance, a bound has to be specified. 
-This can be done either using a static bound ```--bound``` or a relative bound ```--relative-bound```.
+Optionally, the results can also be stored to an output file specified with the `--output` parameter.
+There are options `--no-print` to avoid the console out put (especially useful for large datasets) and `--info` to store additional information, which are useful for generating the plots in the next step. 
+Furthermore, to give soft real-time guarantees such as (m,k) and longest exceedance, a bound has to be specified. 
+This can be done either using a static bound `--bound` or a relative bound `--relative-bound`.
+A timeout for the analysis (in seconds) can be set using `--timeout`.
 
 **Example:**<br>
-The case studies stored in ```chains/case_studies.jsonl``` can be evaluated using:
+The case studies stored in `chains/case_studies.jsonl` can be evaluated using:
 ```
 python3.12 analysis.py chains/case_studies.jsonl
 ```
 We can see the different metrics and analysis time printed to the console.
-Furthermore, if the file ```tutorial/cause_effect.jsonl``` has been created in the previous step, we can prepare the results for the plotting in the subsequent step. 
+Furthermore, if the file `tutorial/cause_effect.jsonl` has been created in the previous step, we can prepare the results for the plotting in the subsequent step. 
 For that, we need to add additional information, calculate the soft metrics and store the outputs:
 ```
 python3.12 analysis.py --info --relative-bound 1.0 --output tutorial/results.jsonl tutorial/cause_effect.jsonl
 ```
-We can see that a new file ```tutorial/results.jsonl``` has been created storing the analysis results.
-Feel free to manually or automatically add your own cause-effect chains and apply our analysis!
+We can see that a new file `tutorial/results.jsonl` has been created storing the analysis results.
 
 
 ### Further Components
 
+Multiple other python components are used, mainly to achieve the plots presented in the paper. The components are listed below. 
+In general, using the `-h` option shows an instruction how to utilize the corresponding component. 
+Furthermore, a peak into the `automatic_eval.sh`-file can demonstrate how components can be utilized correctly. 
 
+- `plot.py`: The script takes multiple input files (in case multiple runtime measurements have been done), and plots the median result. It generates two output files, specified by the `--outputs` parameter, to show the relation between anchor points and runtime. With the results `tutorial/results.jsonl` exemplary generated in the previous steps, we can create plots using:
+`python3.12 plot.py -o tutorial/plot1.png tutorial/plot2.png tutorial/results.jsonl`
+This generates two plots `tutorial/plot1.png` `tutorial/plot2.png` similar to those displayed in the paper. 
+- `compare_methods.py`: Analyzes cause-effect chains using literature results. Input and output file have to be specified, and a timeout can optionally be set using the `--timeout` parameter.
+- `plot_runtimecomparison.py`: Plots a runtime comparison similar to the plots presented in the paper. It allows specifying multiple inputs using `-i <method-name> <keyword-in-inputfile> <inputfile1>.jsonl [<inputfile2>.jsonl ...]`. Inside the inputfiles, the runtime is stored under the keyword `<keyword-in-inputfile>`. When multiple inputfiles are specified, the median runtime among all inputfiles is taken. Multiple methods can be specified by using the `-i` parameter multiple times.
 
-
-
-
-The shape-aware analysis framework consists of three parts, discussed below. 
-When during the installation process a virtual environment is created, first use ```source venv/bin/activate``` to enter the environment. 
-
-This framework uses json-line (```.jsonl```) files, where each line represents one cause-effect chain or one result in json format. 
-Examples of how these ```.jsonl``` files look like can be found in the folder ```chains/```.
-
-The framework has three parts:
-- The first is a cause-effect chain generator (```generate.py```) which creates ```.jsonl``` files using two benchmarks.
-- The second is the shape-aware analyzer (```analysis.py```) which takes the cause-effect chain ```.jsonl``` files as input and prints the results. The results can optionally also be stored as ```.jsonl``` files. 
-- The third is a plot generator (```plot.py```) which takes the ```.jsonl``` result files from the shape-aware analyzer and generates plots which are shown in the paper. 
-
-
-#### Plot generation
-
-The runtime plots can be generated using ```python3.12 plot.py```
-```
-usage: plot.py [-h] [-o OUTPUTS OUTPUTS] input [input ...]
-
-Plot evaluation results.
-
-positional arguments:
-  input                 Results files (.jsonl)
-
-options:
-  -h, --help            show this help message and exit
-  -o OUTPUTS OUTPUTS, --outputs OUTPUTS OUTPUTS
-                        Output file to save results.
-```
-
-The script takes multiple input files (in case multiple runtime measurements have been done), and plots the median result. 
-It generates two output files, specified by the ```--outputs``` parameter.
-
-**Example:**<br>
-With the results ```tutorial/results.jsonl``` exemplary generated in the previous step, we can create plots using:
-```
-python3.12 plot.py -o tutorial/plot1.png tutorial/plot2.png tutorial/results.jsonl
-```
-This generates two plots ```tutorial/plot1.png``` ```tutorial/plot2.png``` similar to those displayed in the paper. 
-
+**Note**<br>
+The component `make_table.py` is only used to generate the table presented in the paper and is not meant to be applied for a general analysis usage. (Hence, it does not have a `-h` parameter for example.)
 
 ### Metrics
 
-- TODO: Write a list of all the metrics plus a short explanation
+Using our shape-aware analysis, the following metrics can be analyzed:
+
+| Paper | Metric | Keyword | Short Description | Note |
+|-|-|-|-|-|
+| Section VI.B | Maximum reaction time | `MaxRT` | Type of maximum end-to-end latency | -- |
+| Section VI.B | Maximum reduced reaction time | `MaxRedRT` | Type of maximum end-to-end latency | -- |
+| Section VI.B | Reactive time | `Reac` | Type of maximum end-to-end latency | -- |
+| Section VI.B | Minimum reaction time | `MinRT` | Type of minimum end-to-end latency | -- |
+| Section VI.C | Average latency | `AvRT` | The average reaction time over one hyperperiod assuming uniform distribution. | -- |
+| Section VI.D | Throughput | `throughp` | Rate of data samples that are processed without being overwritten. | -- |
+| Section VI.E | Weakly-hard (m,k) | `mkRT` | (m,k) constraints that are fulfilled for reaction time. | A bound for comparison has to be specified. |
+| Section VI.F | Longest consecutive exceedance | `LE-RT` | Longest interval that the reaction time exceeds a specified bound. | A bound for comparison has to be specified. |
+
 
 ### Use Cases
 
