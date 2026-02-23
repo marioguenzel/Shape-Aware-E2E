@@ -175,7 +175,7 @@ The contents of the paper correspond to the following files:
 | Figure 4.b | `paperdata/runtime_comparison_uni_20.png` |
 | Figure 4.c | `paperdata/runtime_comparison_uni_50.png` |
 | Figure 5.a | `paperdata/UNI_runtime.png` |
-| Figure 5.a | `paperdata/UNI_anchors.png` |
+| Figure 5.b | `paperdata/UNI_anchors.png` |
 
 
 
