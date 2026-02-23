@@ -43,7 +43,7 @@ The project is composed of the following files:
     ├── compare_methods.py              # Literature analyses for comparison
     ├── plot.py                         # Plotting of relation between runtime and anchor points
     ├── plot_runtimecomparison.py       # Plotting of runtime comparison with literature results
-    ├── make_table.py                   # Script to generate a table for the case-study results
+    ├── make_table.py                   # Script to generate a latex table for the case-study results
     └── automatic_eval.sh               # Script to automate the evaluation from the paper
 
 
