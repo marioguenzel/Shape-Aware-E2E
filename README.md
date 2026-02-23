@@ -32,14 +32,17 @@ The project is composed of the following files:
     ├── requirements.txt                # Python dependencies
     ├── LICENSE                         # License file
     │
-    ├── generate.py                     # Cause-effect chain generator
+    ├── generate.py                     # Synthetic cause-effect chain generator
     ├── analysis.py                     # Analysis tool
-    ├── plot.py                         # Plotting of runtime results
     │
     ├── chains/                         # Pre-implemented cause-effect chains
     │   ├── case_studies.jsonl              # Case studies
     │   └── paper_running_example.jsonl     # Running example used in the paper
     │
+    ├── compare_methods.py              # Literature analyses for comparison
+    ├── plot.py                         # Plotting of relation between runtime and anchor points
+    ├── plot_runtimecomparison.py       # Plotting of runtime comparison with literature results
+    ├── make_table.py                   # Script to generate a table for the case-study results
     └── automatic_eval.sh               # Script to automate the evaluation from the paper
 
 
@@ -112,7 +115,7 @@ to activate the virtual environment.
 To check whether that was successful, when running `which python3`, it should display `<your-path>/venv/bin/python3`.
 
 **Note:**<br>
-It is important that the command `python3` runs the right script, because this command is utilized in `automatic_eval.sh`.
+It is important that the command `python3` works correctly, because this command is utilized in `automatic_eval.sh`.
 
 ### Step 3: Run the automatic evaluation script
 
@@ -300,4 +303,17 @@ Using our shape-aware analysis, the following metrics can be analyzed:
 
 ### Use Cases
 
-- TODO: Make a list of all the use cases. Each of them is one entry in chain/case_studies.jsonl (easily identifiable with the ID field)
+The following use-cases are listed in `chain/case_studies.jsonl`:
+
+| Paper | Description | IDs |
+|-|-|-|
+| Hamann et al., "WATERS industrial challenge", WATERS 2017.<br> https://www.ecrts.org/forum/download/WATERS2017_Industrial_Challenge_Bosch.pdf | The two chains with periodic tasks. | WATERS16/17 EffectChain1; WATERS16/17 EffectChain2 |
+| Rehm et al., "Performance modeling of heterogeneous HW platforms", Microprocessors and Microsystems 2021.<br> https://dl.acm.org/doi/abs/10.1016/j.micpro.2021.104336 | Six chains from the WATERS 2019 Challenge prototype of a next-generation advanced driving assistance system by Bosch. (More detailed description in the paper.) | WATERS2019, LG->LOC->EKF->Planner->DASM; WATERS2019, CAN->LOC->EKF->Planner->DASM; WATERS2019, CAN->EKF->Planner->DASM; WATERS2019, SFM->Planner->DASM; WATERS2019, LaneDet->Planner->DASM; WATERS2019, Detection->Planner->DASM |
+| PerceptIn, "RTSS 2021 industry challenge", RTSS 2021<br> https://2021.rtss.org/wp-content/uploads/2021/06/RTSS2021-Industry-Challenge-v2.pdf | The five chains from the autonomous driving system. | RTSS 2021 - 1 - mmWaveRadar; RTSS 2021 - 2 - camera; RTSS 2021 - 3 - Lidar(long); RTSS 2021 - 4 - Lidar(short); RTSS 2021 - 5 - GNSS/IMU |
+| Bellassai et al., "AP-LET: Enabling deterministic pub/sub communication in autosar adaptive", Journal of Systems Architecture 2025.<br> https://dl.acm.org/doi/abs/10.1016/j.sysarc.2025.103390 | The chain of the AUTOSAR Adaptive Platform brake assistant Demonstrator application. | AUTOSAR-Adaptive Brake Assistant |
+| Becker and Casini, "The material framework: Modeling and automatic code generation of edge real-time applications under the qnx rtos", Journal of Systems Architecture 2024.<br> https://dl.acm.org/doi/abs/10.1016/j.sysarc.2024.103219 | The chain from the Brake-By-Wire application of a Swedish automotive Original Equipment Manufacturer (OEM). | Brake-By-Wire JSA 2024 |
+| Gemlau et al., "System-level logical execution time: Augmenting the logical execution time paradigm for distributed real-time automotive software", ACM Trans. Cyber-Phys. Syst. 2021.<br> https://dl.acm.org/doi/abs/10.1145/3381847 | A powertrain application. | Gemlau TCPS 2021 Fig. 7a, upper path; Gemlau TCPS 2021 Fig. 7a, lower path |
+| Iyenghar et al., "Automated end-to-end timing analysis of autosar-based causal event chains", ENASE 2020.<br> https://www.scitepress.org/Papers/2020/95129/95129.pdf | An Autonomous Emergency Braking System case study. | Iyenghar ENASE 2020, Figure 7 |
+| Frey, "Case Study: Engine Control Application. Technical report", University Ulm 2010.<br> http://www.uni-ulm.de/fileadmin/website_uni_ulm/iui/Ulmer_Informatik_Berichte/2010/UIB-2010-03.pdf | Four chains from the engine control application case study. | Frey 2010: Tech. report, Fig. 10 1st path from top; Frey 2010: Tech. report, Fig. 10 2nd path from top; Frey 2010: Tech. report, Fig. 10 3rd path from top, angleSync with 10ms period; Frey 2010: Tech. report, Fig. 10 4rd path from top, angleSync with 10ms period |
+| Pagetti et al., "The ROSACE case study: From simulink specification to multi/many-core execution", RTAS 2014.<br> https://ieeexplore.ieee.org/abstract/document/6926012 | The two chains of the ROSACE avionics case study of a flight controller. | ROSACE - 1 - h_filter->altitude_hold->Vz_control; ROSACE - 2 - x_filter->x_control |
+
