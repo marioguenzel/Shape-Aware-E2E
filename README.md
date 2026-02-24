@@ -150,7 +150,7 @@ If your hardware is not powerful enough or just a **quick test of reproducibilit
 bash automatic_eval.sh 0
 ```
 can be used. This will start a simplified version of the experiment. 
-The configuration for running the experiment can be changed by modifying the first few lines of `automatic_eval.sh` can be modified:
+The configuration for running the experiment can be changed by modifying the first few lines of `automatic_eval.sh`:
 ```
 NUM_ITERATIONS=50  # number of runs for the time measurements of the synthetic evaluation
 TASKSETS_PER_CONFIG=1000  # number of tasksets per configuration for the runtime evaluation
