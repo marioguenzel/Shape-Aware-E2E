@@ -38,6 +38,7 @@ The general usage of this repository (e.g., to analyze own cause-effect chains) 
     - [Further Components](#further-components)
     - [Metrics](#metrics)
     - [Use Cases](#use-cases)
+  - [Acknowledgment](#acknowledgment)
 
 
 
@@ -338,3 +339,9 @@ The following use-cases are listed in `chain/case_studies.jsonl`:
 | Frey, "Case Study: Engine Control Application. Technical report", University Ulm 2010.<br> http://www.uni-ulm.de/fileadmin/website_uni_ulm/iui/Ulmer_Informatik_Berichte/2010/UIB-2010-03.pdf | Four chains from the engine control application case study. | Frey 2010: Tech. report, Fig. 10 1st path from top; Frey 2010: Tech. report, Fig. 10 2nd path from top; Frey 2010: Tech. report, Fig. 10 3rd path from top, angleSync with 10ms period; Frey 2010: Tech. report, Fig. 10 4rd path from top, angleSync with 10ms period |
 | Pagetti et al., "The ROSACE case study: From simulink specification to multi/many-core execution", RTAS 2014.<br> https://ieeexplore.ieee.org/abstract/document/6926012 | The two chains of the ROSACE avionics case study of a flight controller. | ROSACE - 1 - h_filter->altitude_hold->Vz_control; ROSACE - 2 - x_filter->x_control |
 
+## Acknowledgment
+
+This result is part of a project (PropRT) that has received funding from the European Research Council (ERC) under the European Union's Horizon 2020 research and innovation programme (grant agreement No. 865170).
+This work has been funded by the Deutsche Forschungsgemeinschaft (DFG, German Research Foundation) -- Project No. 569077889 (PEACH).
+This work was partially funded by the Swedish Research Council (VR) under the project nr. 2023-04773 and by Sweden's Innovation Agency via the NFFP8 project 2024-01267: PARTI.
+This work has been partially supported by the project SERICS (PE00000014) under the MUR National Recovery and Resilience Plan funded by the European Union -- NextGenerationEU.
