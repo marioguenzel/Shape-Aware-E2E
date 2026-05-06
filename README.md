@@ -201,7 +201,7 @@ To use the framework on your own cause-effect chains, just follow the steps:
 3. Add a file with your cause-effect chains in ```.jsonl``` format. (You can take the file ```chains/case_studies.jsonl``` as template.)
 4. Use ```python3 analysis.py your/file/name.jsonl```
 
-More detailed instruction can be found in the sections [Installation](#installation) and the other subsections of [General Usage](#general-usage). 
+More detailed instruction can be found in the section [Installation](#installation) and the other subsections of [General Usage](#general-usage). 
 
 
 ### Generating Cause-Effect Chains
